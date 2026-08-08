@@ -1,16 +1,17 @@
 package com.campuscart;
 
+import com.campuscart.support.AbstractMySqlIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * Verifies the Spring application context starts with the Part-1 foundation wired.
+ * Verifies the Spring application context starts with the full Part-2 persistence stack
+ * wired: datasource, Flyway migrations applied, and Hibernate schema {@code validate}
+ * passing against a real MySQL 8 (see {@link AbstractMySqlIntegrationTest}).
  *
- * <p>No datasource/security/redis autoconfiguration is on the classpath yet, so this
- * loads without external infrastructure.</p>
+ * <p>A mapping/DDL mismatch (e.g. an entity column absent from a migration) fails
+ * context startup, and therefore this test.</p>
  */
-@SpringBootTest
-class CampusCartApplicationTests {
+class CampusCartApplicationTests extends AbstractMySqlIntegrationTest {
 
     @Test
     void contextLoads() {

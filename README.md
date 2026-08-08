@@ -5,8 +5,10 @@
 Production-grade marketplace backend for CampusCart. Built with Java 21, Spring Boot 3.5,
 and a feature-based, DDD-inspired modular architecture.
 
-> **Build status:** Part 1 (foundation) only. Marketplace domains (product, cart, order,
-> payment, chat, admin, …) are **not** implemented yet and are delivered in later parts.
+> **Build status:** Part 2 (persistence foundation: JPA + Flyway schema for users,
+> colleges, cities, college email domains, categories). Remaining marketplace domains
+> (product, cart, order, payment, chat, admin, …) are **not** implemented yet and are
+> delivered in later parts.
 
 ---
 
@@ -18,22 +20,23 @@ and a feature-based, DDD-inspired modular architecture.
 | Framework | Spring Boot 3.5.16 |
 | API docs | springdoc-openapi 2.9.0 (Swagger UI) |
 | Build | Maven |
-| Datastore (later parts) | MySQL 8, Flyway |
+| Datastore | MySQL 8, Flyway |
 | Cache/OTP (later parts) | Redis 7 |
 | Containerization | Docker, Docker Compose |
 
-> **JDK note:** The reference machine has **JDK 25** installed while the spec targets
-> **Java 21**. The build cross-compiles to Java 21 bytecode (`maven.compiler.release=21`)
-> and the container image pins `eclipse-temurin:21`. Installing **Temurin 21** locally is
-> recommended for exact parity. See `docs/backend-audit.md` §4.
+> **JDK note:** The build targets **Java 21** bytecode (`maven.compiler.release=21`) and
+> the container image pins `eclipse-temurin:21`. The reference machine now runs **JDK
+> 21.0.11 LTS**, so the earlier JDK-25 ByteBuddy workaround (Part-1 audit §4) has been
+> removed. See `docs/backend-audit.md` §4 for the original context.
 
 ---
 
 ## Prerequisites
 
-- JDK 21 (recommended) — a newer JDK can build via release-21 cross-compilation.
+- JDK 21
 - Maven 3.9+
-- Docker + Docker Compose (for MySQL/Redis in later parts)
+- Docker + Docker Compose — MySQL 8 for running the app; also used by the test suite
+  (Testcontainers spins up MySQL 8, so Docker must be running for `mvn verify`).
 
 ---
 
@@ -45,11 +48,20 @@ and a feature-based, DDD-inspired modular architecture.
 mvn clean verify
 ```
 
+> Integration tests use Testcontainers, so a running Docker daemon is required.
+
 ### Run locally
 
+Start MySQL first (the app connects on boot and Flyway migrates the schema):
+
 ```bash
+docker compose up -d mysql
 mvn spring-boot:run
 ```
+
+Datasource defaults (`jdbc:mysql://localhost:3306/campuscart`, user/pass `campuscart`)
+match the compose service and are overridable via `DB_URL` / `DB_USERNAME` /
+`DB_PASSWORD`.
 
 ### Verify it is up
 
@@ -69,17 +81,26 @@ docker compose up -d mysql redis
 
 ---
 
-## Project Layout (Part 1)
+## Project Layout
 
 ```
 src/main/java/com/campuscart
 ├── CampusCartApplication.java        # entry point
-├── config/                           # OpenAPI (Swagger) config
-└── common/
-    ├── api/                          # ApiResponse<T>, ApiError (response envelope)
-    ├── exception/                    # ErrorCode, ApiException hierarchy, global handler
-    └── web/                          # HealthController (liveness)
+├── config/                           # OpenAPI + JPA auditing config
+├── common/
+│   ├── api/                          # ApiResponse<T>, ApiError (response envelope)
+│   ├── domain/                       # BaseEntity (UUID PK, auditing, @Version)
+│   ├── exception/                    # ErrorCode, ApiException hierarchy, global handler
+│   └── web/                          # HealthController (liveness)
+├── location/domain/                  # City
+├── college/domain/                   # College, CollegeEmailDomain
+├── user/                             # User (domain) + UserRepository
+└── catalog/domain/                   # Category
+
+src/main/resources/db/migration       # Flyway: V1 geo/institutions, V2 users, V3 categories
 ```
+
+See `docs/part2-database.md` for the schema (ER diagram, tables, constraints, indexes).
 
 Feature modules (`auth`, `user`, `product`, `cart`, `order`, `payment`, `chat`, `admin`, …)
 are introduced in subsequent, controlled parts.
@@ -89,3 +110,5 @@ are introduced in subsequent, controlled parts.
 ## Documentation
 
 - `docs/backend-audit.md` — repository audit, environment report, and Part-1 change log.
+- `docs/part2-database.md` — Part-2 schema: conventions, ER diagram, tables, constraints,
+  index strategy, and migration list.

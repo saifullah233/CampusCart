@@ -2,6 +2,27 @@ spring:
   application:
     name: campuscart-backend
 
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/campuscart}
+    username: ${DB_USERNAME:campuscart}
+    password: ${DB_PASSWORD:campuscart}
+
+  jpa:
+    # Flyway owns the schema. Hibernate only verifies entities match it.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        # Store/read all TIMESTAMP/DATETIME values in UTC so Instant round-trips
+        # deterministically regardless of the JVM/DB session time zone.
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
 server:
   port: 8080
   error:
@@ -30,3 +51,13 @@ logging:
   level:
     root: INFO
     com.campuscart: INFO
+
+---
+# Activated inside docker-compose (SPRING_PROFILES_ACTIVE=docker). Points the
+# datasource at the compose service host instead of localhost.
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: ${DB_URL:jdbc:mysql://mysql:3306/campuscart}
