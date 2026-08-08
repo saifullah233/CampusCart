@@ -1,0 +1,62 @@
+# CampusCart local infrastructure + app.
+#
+# Values below are LOCAL DEVELOPMENT DEFAULTS ONLY. Never use these credentials in
+# any shared or production environment. Override via a git-ignored .env file.
+#
+# NOTE: MySQL and Redis are provisioned here so the persistence/caching parts can
+# consume them. The Part-1 application does not yet connect to either service.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: campuscart-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-campuscart_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-campuscart}
+      MYSQL_USER: ${MYSQL_USER:-campuscart}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-campuscart}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-campuscart_root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: campuscart-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campuscart-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
