@@ -33,3 +33,5 @@ src/main/resources/application-local.yml
 
 # Build/tool caches
 .mvn/timing.properties
+.qwen/
+

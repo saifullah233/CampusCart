@@ -5,10 +5,14 @@
 Production-grade marketplace backend for CampusCart. Built with Java 21, Spring Boot 3.5,
 and a feature-based, DDD-inspired modular architecture.
 
-> **Build status:** Part 2 (persistence foundation: JPA + Flyway schema for users,
-> colleges, cities, college email domains, categories). Remaining marketplace domains
-> (product, cart, order, payment, chat, admin, …) are **not** implemented yet and are
-> delivered in later parts.
+> **Build status:** Part 6 wishlist, cart, orders, and deferred payment foundation are
+> implemented on top of the Part 5 product/category marketplace. This includes server-side
+> ownership/discovery, transactional stock reservation, order state transitions, and no-fake-
+> payment behavior.
+>
+> **Earlier scope:** Parts 2-5 established persistence, security, authentication, OTP,
+> rotating sessions, user profiles, and the product marketplace. Chat and broader Admin
+> workflows remain future scope.
 
 ---
 
@@ -21,6 +25,7 @@ and a feature-based, DDD-inspired modular architecture.
 | API docs | springdoc-openapi 2.9.0 (Swagger UI) |
 | Build | Maven |
 | Datastore | MySQL 8, Flyway |
+| Security | Spring Security, signed JWT access tokens, hashed rotating refresh tokens |
 | Cache/OTP (later parts) | Redis 7 |
 | Containerization | Docker, Docker Compose |
 
@@ -52,6 +57,15 @@ mvn clean verify
 
 ### Run locally
 
+Provide local-only credentials through the environment or a git-ignored `.env` file:
+
+```powershell
+$env:MYSQL_ROOT_PASSWORD = "<local-root-password>"
+$env:MYSQL_PASSWORD = "<local-database-password>"
+$env:DB_PASSWORD = $env:MYSQL_PASSWORD
+$env:JWT_SECRET = "<random-value-at-least-32-characters>"
+```
+
 Start MySQL first (the app connects on boot and Flyway migrates the schema):
 
 ```bash
@@ -59,9 +73,12 @@ docker compose up -d mysql
 mvn spring-boot:run
 ```
 
-Datasource defaults (`jdbc:mysql://localhost:3306/campuscart`, user/pass `campuscart`)
-match the compose service and are overridable via `DB_URL` / `DB_USERNAME` /
-`DB_PASSWORD`.
+Datasource defaults use the local `campuscart` database and username; `DB_URL` and
+`DB_USERNAME` remain overridable. The application requires `DB_PASSWORD` and a runtime
+`JWT_SECRET`; neither has a source-controlled default.
+
+Set `CORS_ALLOWED_ORIGINS` to the exact trusted frontend origins when needed. Never
+commit the secret or a shared `.env` file.
 
 ### Verify it is up
 
@@ -71,6 +88,10 @@ match the compose service and are overridable via `DB_URL` / `DB_USERNAME` /
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
 ### Infrastructure (MySQL + Redis) via Docker
+
+Before starting Compose, provide `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`,
+`DB_PASSWORD`, and `JWT_SECRET` in the shell or a git-ignored `.env` file. The
+database password used by the app should match `MYSQL_PASSWORD`.
 
 ```bash
 docker compose up -d mysql redis
@@ -92,23 +113,30 @@ src/main/java/com/campuscart
 │   ├── domain/                       # BaseEntity (UUID PK, auditing, @Version)
 │   ├── exception/                    # ErrorCode, ApiException hierarchy, global handler
 │   └── web/                          # HealthController (liveness)
+├── security/                         # JWT, stateless filter chain, CORS, refresh tokens
 ├── location/domain/                  # City
 ├── college/domain/                   # College, CollegeEmailDomain
 ├── user/                             # User (domain) + UserRepository
 └── catalog/domain/                   # Category
 
-src/main/resources/db/migration       # Flyway: V1 geo/institutions, V2 users, V3 categories
+src/main/resources/db/migration       # Flyway: V1-V9, including commerce tables
 ```
 
 See `docs/part2-database.md` for the schema (ER diagram, tables, constraints, indexes).
 
 Feature modules (`auth`, `user`, `product`, `cart`, `order`, `payment`, `chat`, `admin`, …)
-are introduced in subsequent, controlled parts.
+are introduced in controlled parts; Chat and broader Admin workflows remain deferred.
 
 ---
 
 ## Documentation
 
-- `docs/backend-audit.md` — repository audit, environment report, and Part-1 change log.
+- `docs/backend-audit.md` — repository audit, environment report, and implementation status.
+- `docs/security-foundation.md` — JWT, refresh-token, CORS, authorization, and secret policy.
+- `docs/authentication.md` — registration, OTP lifecycle, login, sessions, and profile API.
 - `docs/part2-database.md` — Part-2 schema: conventions, ER diagram, tables, constraints,
   index strategy, and migration list.
+- `docs/product-marketplace.md` - product/category endpoints, discovery scopes, filters,
+  ownership, and Cloudinary image policy.
+- `docs/wishlist-cart-orders.md` - wishlist/cart endpoints, checkout locking, order
+  transitions, authorization, and deferred payment integration.
