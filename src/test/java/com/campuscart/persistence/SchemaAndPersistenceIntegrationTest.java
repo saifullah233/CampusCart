@@ -36,7 +36,7 @@ class SchemaAndPersistenceIntegrationTest extends AbstractMySqlIntegrationTest {
     void flywayAppliedEveryMigration() {
         Integer applied = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success = 1", Integer.class);
-        assertThat(applied).isGreaterThanOrEqualTo(9);
+        assertThat(applied).isGreaterThanOrEqualTo(13);
     }
 
     @Test
@@ -47,7 +47,8 @@ class SchemaAndPersistenceIntegrationTest extends AbstractMySqlIntegrationTest {
         assertThat(tables).contains(
                 "cities", "colleges", "college_email_domains", "users", "categories", "refresh_tokens",
                 "otp_challenges", "products", "product_images", "wishlist_items", "cart_items", "orders",
-                "order_items", "payments");
+                "order_items", "payments", "conversations", "chat_messages", "user_blocks", "chat_reports",
+                "product_likes", "notifications", "reviews", "audit_logs");
     }
 
     @Test

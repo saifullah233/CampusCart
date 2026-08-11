@@ -5,14 +5,13 @@
 Production-grade marketplace backend for CampusCart. Built with Java 21, Spring Boot 3.5,
 and a feature-based, DDD-inspired modular architecture.
 
-> **Build status:** Part 6 wishlist, cart, orders, and deferred payment foundation are
-> implemented on top of the Part 5 product/category marketplace. This includes server-side
-> ownership/discovery, transactional stock reservation, order state transitions, and no-fake-
-> payment behavior.
+> **Build status:** Parts 1-8 are implemented, including the Part 8 review/report lifecycle,
+> strict admin moderation, user suspension, reference-data management, audit logs, and
+> admin dashboard analytics. Payment remains a deferred provider integration.
 >
-> **Earlier scope:** Parts 2-5 established persistence, security, authentication, OTP,
-> rotating sessions, user profiles, and the product marketplace. Chat and broader Admin
-> workflows remain future scope.
+> **Earlier scope:** Parts 2-7 established persistence, security, authentication, OTP,
+> rotating sessions, user profiles, the product marketplace, commerce, chat, WebSocket,
+> notifications, and moderation foundations.
 
 ---
 
@@ -140,3 +139,5 @@ are introduced in controlled parts; Chat and broader Admin workflows remain defe
   ownership, and Cloudinary image policy.
 - `docs/wishlist-cart-orders.md` - wishlist/cart endpoints, checkout locking, order
   transitions, authorization, and deferred payment integration.
+- `docs/part8-reviews-reports-admin.md` - review eligibility, report lifecycle,
+  moderation, admin APIs, authorization, audit logs, and analytics.

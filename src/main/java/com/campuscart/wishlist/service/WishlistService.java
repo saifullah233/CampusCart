@@ -7,6 +7,8 @@ import com.campuscart.common.exception.ResourceNotFoundException;
 import com.campuscart.common.exception.ProductUnavailableException;
 import com.campuscart.product.domain.Product;
 import com.campuscart.product.service.ProductService;
+import com.campuscart.notification.domain.NotificationType;
+import com.campuscart.notification.service.NotificationService;
 import com.campuscart.security.AuthenticatedUser;
 import com.campuscart.user.domain.User;
 import com.campuscart.user.service.UserService;
@@ -25,13 +27,16 @@ public class WishlistService {
     private final WishlistItemRepository wishlistRepository;
     private final ProductService productService;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public WishlistService(WishlistItemRepository wishlistRepository,
                            ProductService productService,
-                           UserService userService) {
+                           UserService userService,
+                           NotificationService notificationService) {
         this.wishlistRepository = wishlistRepository;
         this.productService = productService;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -44,7 +49,11 @@ public class WishlistService {
         if (wishlistRepository.existsByUserIdAndProductId(userId, productId)) {
             throw new DuplicateResourceException("Product is already in your wishlist.");
         }
-        return toResponse(wishlistRepository.save(new WishlistItem(user, product)));
+        WishlistItem saved = wishlistRepository.save(new WishlistItem(user, product));
+        notificationService.create(product.getSeller().getId(), NotificationType.WISHLIST_ADDED,
+                "Wishlist activity", user.getFullName() + " added your product to a wishlist.",
+                "{\"productId\":\"" + productId + "\",\"userId\":\"" + userId + "\"}");
+        return toResponse(saved);
     }
 
     @Transactional

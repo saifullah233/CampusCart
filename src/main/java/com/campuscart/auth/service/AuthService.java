@@ -83,7 +83,7 @@ public class AuthService {
         if (userRepository.existsByPhoneNumber(phone)) {
             throw new DuplicateResourceException("An account with this phone number already exists.");
         }
-        City city = cityRepository.findById(request.cityId())
+        City city = cityRepository.findByIdAndActiveTrue(request.cityId())
                 .orElseThrow(() -> ResourceNotFoundException.of("City", request.cityId()));
         otpService.ensureCanIssue(phone);
 

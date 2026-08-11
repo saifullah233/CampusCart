@@ -4,12 +4,14 @@ import com.campuscart.catalog.dto.CategoryRequest;
 import com.campuscart.catalog.dto.CategoryResponse;
 import com.campuscart.catalog.service.CategoryService;
 import com.campuscart.common.api.ApiResponse;
+import com.campuscart.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -41,20 +43,36 @@ public class CategoryController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CategoryResponse>> create(@Valid @RequestBody CategoryRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(categoryService.create(request)));
+    public ResponseEntity<ApiResponse<CategoryResponse>> create(@AuthenticationPrincipal AuthenticatedUser principal,
+                                                                 @Valid @RequestBody CategoryRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok(categoryService.create(principal.id(), request)));
     }
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<CategoryResponse> update(@PathVariable UUID id, @Valid @RequestBody CategoryRequest request) {
-        return ApiResponse.ok(categoryService.update(id, request));
+    public ApiResponse<CategoryResponse> update(@AuthenticationPrincipal AuthenticatedUser principal,
+                                                @PathVariable UUID id, @Valid @RequestBody CategoryRequest request) {
+        return ApiResponse.ok(categoryService.update(principal.id(), id, request));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<Void> delete(@PathVariable UUID id) {
-        categoryService.delete(id);
+    public ApiResponse<Void> delete(@AuthenticationPrincipal AuthenticatedUser principal, @PathVariable UUID id) {
+        categoryService.delete(principal.id(), id);
         return ApiResponse.ok("Category deleted.", null);
+    }
+
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<CategoryResponse> activate(@AuthenticationPrincipal AuthenticatedUser principal,
+                                                  @PathVariable UUID id) {
+        return ApiResponse.ok(categoryService.activate(principal.id(), id));
+    }
+
+    @PostMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<CategoryResponse> deactivate(@AuthenticationPrincipal AuthenticatedUser principal,
+                                                    @PathVariable UUID id) {
+        return ApiResponse.ok(categoryService.deactivate(principal.id(), id));
     }
 }

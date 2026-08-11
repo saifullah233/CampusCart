@@ -1,6 +1,8 @@
 package com.campuscart.security;
 
+import com.campuscart.common.exception.ErrorCode;
 import com.campuscart.common.exception.InvalidTokenException;
+import com.campuscart.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,9 +28,9 @@ import java.io.IOException;
  * authentication. This keeps the 401 response uniform and avoids leaking why a token was
  * rejected.</p>
  *
- * <p>The filter is a no-throw participant: it never writes an error response itself and
- * never lets a token-parsing failure escape, so authorization remains the single
- * responsibility of the security configuration.</p>
+ * <p>Invalid tokens are left unauthenticated for the entry point to handle. Persisted
+ * inactive accounts are rejected here so an existing access token cannot reach any
+ * protected endpoint after suspension.</p>
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -36,9 +38,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final SecurityErrorResponseWriter errorResponseWriter;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService,
+                                   UserRepository userRepository,
+                                   SecurityErrorResponseWriter errorResponseWriter) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
@@ -51,6 +59,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 AuthenticatedUser principal = jwtService.parseAccessToken(token);
+                var persistedUser = userRepository.findById(principal.id());
+                if (persistedUser.isPresent()) {
+                    var user = persistedUser.get();
+                    if (!user.getStatus().canAuthenticate()) {
+                        SecurityContextHolder.clearContext();
+                        errorResponseWriter.write(response, HttpServletResponse.SC_FORBIDDEN,
+                                ErrorCode.ACCOUNT_NOT_ACTIVE.name(), "The account is not active.",
+                                request.getRequestURI());
+                        return;
+                    }
+                    principal = new AuthenticatedUser(user.getId(), user.getEmail(), user.getRole());
+                }
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 principal, null, principal.getAuthorities());

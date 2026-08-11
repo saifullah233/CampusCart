@@ -7,6 +7,7 @@ import com.campuscart.common.exception.AccountNotActiveException;
 import com.campuscart.common.exception.BusinessRuleException;
 import com.campuscart.common.exception.ResourceNotFoundException;
 import com.campuscart.location.domain.City;
+import com.campuscart.notification.service.NotificationService;
 import com.campuscart.product.domain.MarketplaceScope;
 import com.campuscart.product.domain.Product;
 import com.campuscart.product.domain.ProductStatus;
@@ -41,13 +42,16 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
+    private final NotificationService notificationService;
 
     public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
-                          UserRepository userRepository, ProductMapper productMapper) {
+                          UserRepository userRepository, ProductMapper productMapper,
+                          NotificationService notificationService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.productMapper = productMapper;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -59,7 +63,9 @@ public class ProductService {
         Product product = new Product(seller, seller.getCollege(), seller.getCity(), category,
                 request.title().trim(), request.description().trim(), request.price(),
                 request.productType(), request.sellingReach(), quantity);
-        return productMapper.toResponse(productRepository.save(product));
+        Product saved = productRepository.save(product);
+        notificationService.notifyNewProduct(saved);
+        return productMapper.toResponse(saved);
     }
 
     @Transactional
@@ -189,7 +195,7 @@ public class ProductService {
     }
 
     private Category requireCategory(UUID categoryId) {
-        return categoryRepository.findById(categoryId)
+        return categoryRepository.findByIdAndActiveTrue(categoryId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Category", categoryId));
     }
 

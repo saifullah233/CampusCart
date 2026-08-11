@@ -28,6 +28,9 @@ public class City extends BaseEntity {
     @Column(name = "state", nullable = false, length = 120)
     private String state;
 
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     protected City() {
         // Required by JPA.
     }
@@ -51,5 +54,22 @@ public class City extends BaseEntity {
 
     public void setState(String state) {
         this.state = state;
+    }
+
+    public void update(String name, String state) {
+        this.name = name;
+        this.state = state;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }

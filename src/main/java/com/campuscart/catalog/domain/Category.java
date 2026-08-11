@@ -28,6 +28,9 @@ public class Category extends BaseEntity {
     @Column(name = "slug", nullable = false, length = 140)
     private String slug;
 
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     protected Category() {
         // Required by JPA.
     }
@@ -51,5 +54,17 @@ public class Category extends BaseEntity {
 
     public void setSlug(String slug) {
         this.slug = slug;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }

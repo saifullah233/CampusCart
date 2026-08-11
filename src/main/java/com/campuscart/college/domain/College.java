@@ -38,6 +38,9 @@ public class College extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_colleges_city"))
     private City city;
 
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
+
     protected College() {
         // Required by JPA.
     }
@@ -61,5 +64,22 @@ public class College extends BaseEntity {
 
     public void setCity(City city) {
         this.city = city;
+    }
+
+    public void update(String name, City city) {
+        this.name = name;
+        this.city = city;
+    }
+
+    public void activate() {
+        this.active = true;
+    }
+
+    public void deactivate() {
+        this.active = false;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 }

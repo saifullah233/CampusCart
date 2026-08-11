@@ -15,6 +15,8 @@ import com.campuscart.order.dto.OrderItemResponse;
 import com.campuscart.order.dto.OrderResponse;
 import com.campuscart.order.repository.OrderItemRepository;
 import com.campuscart.order.repository.OrderRepository;
+import com.campuscart.notification.domain.NotificationType;
+import com.campuscart.notification.service.NotificationService;
 import com.campuscart.payment.domain.Payment;
 import com.campuscart.payment.repository.PaymentRepository;
 import com.campuscart.product.domain.Product;
@@ -41,19 +43,22 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final PaymentRepository paymentRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     public OrderService(CartItemRepository cartRepository,
                         ProductRepository productRepository,
                         OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         PaymentRepository paymentRepository,
-                        UserService userService) {
+                        UserService userService,
+                        NotificationService notificationService) {
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentRepository = paymentRepository;
         this.userService = userService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -89,6 +94,10 @@ public class OrderService {
             orderItemRepository.save(new OrderItem(order, purchase.product(), purchase.quantity()));
         }
         paymentRepository.save(new Payment(order, total));
+        purchases.stream().map(purchase -> purchase.product().getSeller().getId()).distinct()
+                .forEach(sellerId -> notificationService.create(sellerId, NotificationType.ORDER_RECEIVED,
+                        "Order received", "A buyer placed an order for your product.",
+                        "{\"orderId\":\"" + order.getId() + "\"}"));
         cartRepository.deleteAllInBatch(cartItems);
         return toResponse(order);
     }
@@ -128,6 +137,15 @@ public class OrderService {
         if (target == OrderStatus.CANCELLED || target == OrderStatus.REJECTED) {
             releaseReservedStock(orderId);
         }
+        notificationService.create(order.getBuyer().getId(), NotificationType.ORDER_UPDATE,
+                "Order updated", "Your order is now " + target.name() + ".",
+                "{\"orderId\":\"" + orderId + "\",\"status\":\"" + target.name() + "\"}");
+        orderItemRepository.findByOrderIdOrderByCreatedAtAsc(orderId).stream()
+                .map(item -> item.getSeller().getId())
+                .distinct()
+                .forEach(sellerId -> notificationService.create(sellerId, NotificationType.ORDER_UPDATE,
+                        "Order updated", "An order containing your product is now " + target.name() + ".",
+                        "{\"orderId\":\"" + orderId + "\",\"status\":\"" + target.name() + "\"}"));
         return toResponse(order);
     }
 

@@ -189,6 +189,11 @@ public class User extends BaseEntity {
         this.status = AccountStatus.SUSPENDED;
     }
 
+    /** Restores a previously suspended, already-verified account. */
+    public void reactivate() {
+        this.status = AccountStatus.ACTIVE;
+    }
+
     public College getCollege() {
         return college;
     }

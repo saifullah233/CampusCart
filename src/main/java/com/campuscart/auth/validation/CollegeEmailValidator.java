@@ -26,6 +26,9 @@ public class CollegeEmailValidator {
     public College validate(UUID cityId, UUID collegeId, String email) {
         College college = collegeRepository.findByIdAndCityId(collegeId, cityId)
                 .orElseThrow(() -> new BusinessRuleException("The selected college is not in the selected city."));
+        if (!college.isActive() || !college.getCity().isActive()) {
+            throw new BusinessRuleException("The selected city or college is inactive.");
+        }
         String domain = ContactNormalizer.emailDomain(email);
         CollegeEmailDomain configured = domain == null
                 ? null
