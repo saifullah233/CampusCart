@@ -1,12 +1,21 @@
 package com.campuscart.product.service;
 
+import java.math.BigDecimal;
+import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.campuscart.catalog.domain.Category;
 import com.campuscart.catalog.repository.CategoryRepository;
 import com.campuscart.common.api.PageResponse;
 import com.campuscart.common.exception.AccountNotActiveException;
 import com.campuscart.common.exception.BusinessRuleException;
 import com.campuscart.common.exception.ResourceNotFoundException;
-import com.campuscart.location.domain.City;
 import com.campuscart.notification.service.NotificationService;
 import com.campuscart.product.domain.MarketplaceScope;
 import com.campuscart.product.domain.Product;
@@ -19,19 +28,8 @@ import com.campuscart.product.dto.ProductSearchQuery;
 import com.campuscart.product.dto.UpdateProductRequest;
 import com.campuscart.product.repository.ProductRepository;
 import com.campuscart.product.repository.ProductSpecifications;
-import com.campuscart.security.AuthenticatedUser;
 import com.campuscart.user.domain.User;
 import com.campuscart.user.repository.UserRepository;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ProductService {
@@ -42,15 +40,18 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
+    private final com.campuscart.product.repository.ProductImageRepository productImageRepository;
     private final NotificationService notificationService;
 
     public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
                           UserRepository userRepository, ProductMapper productMapper,
+                          com.campuscart.product.repository.ProductImageRepository productImageRepository,
                           NotificationService notificationService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.productMapper = productMapper;
+        this.productImageRepository = productImageRepository;
         this.notificationService = notificationService;
     }
 
@@ -115,10 +116,29 @@ public class ProductService {
         if (filters != null) {
             specification = specification.and(filters);
         }
-        Page<ProductResponse> page = productRepository.findAll(specification,
-                        PageRequest.of(query.page(), query.size(), parseSort(query.sort())))
-                .map(productMapper::toResponse);
-        return PageResponse.from(page);
+        var page = productRepository.findAll(specification,
+                PageRequest.of(query.page(), query.size(), parseSort(query.sort())));
+
+        // Bulk-load associations and images for the page content to avoid N+1 queries
+        java.util.List<java.util.UUID> ids = page.getContent().stream().map(Product::getId).toList();
+        java.util.List<com.campuscart.product.domain.Product> enriched = ids.isEmpty()
+            ? java.util.List.of()
+            : productRepository.findAllWithAssociationsByIdIn(ids);
+        java.util.Map<java.util.UUID, com.campuscart.product.domain.Product> enrichedById = enriched.stream()
+            .collect(java.util.stream.Collectors.toMap(com.campuscart.product.domain.Product::getId, p -> p));
+
+        java.util.List<com.campuscart.product.domain.ProductImage> images = ids.isEmpty()
+            ? java.util.List.of()
+            : productImageRepository.findByProductIdInOrderByProductIdAscCreatedAtAsc(ids);
+        java.util.Map<java.util.UUID, java.util.List<com.campuscart.product.domain.ProductImage>> imagesByProduct = images.stream()
+            .collect(java.util.stream.Collectors.groupingBy(i -> i.getProduct().getId(), java.util.stream.Collectors.toList()));
+
+        Page<ProductResponse> mapped = page.map(product -> {
+            com.campuscart.product.domain.Product enrichedProduct = enrichedById.getOrDefault(product.getId(), product);
+            java.util.List<com.campuscart.product.domain.ProductImage> imgs = imagesByProduct.getOrDefault(product.getId(), java.util.List.of());
+            return productMapper.toResponse(enrichedProduct, imgs);
+        });
+        return PageResponse.from(mapped);
     }
 
     @Transactional

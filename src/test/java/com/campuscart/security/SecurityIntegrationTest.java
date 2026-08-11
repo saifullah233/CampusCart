@@ -96,4 +96,16 @@ class SecurityIntegrationTest extends AbstractMySqlIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"));
     }
+
+    @Test
+    void invalidPathParameterUsesStandardMalformedRequestEnvelope() throws Exception {
+        String token = jwtService.generateAccessToken(
+                UUID.randomUUID(), "student@example.edu", Role.STUDENT);
+
+        mockMvc.perform(get("/test/security/resources/not-a-uuid")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("MALFORMED_REQUEST"));
+    }
 }

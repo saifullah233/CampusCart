@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +27,12 @@ public class SecurityTestController {
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<String> adminEndpoint() {
         return ApiResponse.ok("admin");
+    }
+
+    @GetMapping("/resources/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<String> uuidEndpoint(@PathVariable UUID id) {
+        return ApiResponse.ok(id.toString());
     }
 
     public record PrincipalView(UUID userId, String role) {

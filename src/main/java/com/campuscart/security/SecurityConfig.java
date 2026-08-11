@@ -2,6 +2,7 @@ package com.campuscart.security;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import com.campuscart.security.otp.OtpProperties;
+import com.campuscart.security.login.LoginRateLimitProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,7 +28,12 @@ import java.time.Clock;
  */
 @Configuration
 @EnableMethodSecurity
-@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class, OtpProperties.class})
+@EnableConfigurationProperties({
+        JwtProperties.class,
+        CorsProperties.class,
+        OtpProperties.class,
+        LoginRateLimitProperties.class
+})
 public class SecurityConfig {
 
     @Bean

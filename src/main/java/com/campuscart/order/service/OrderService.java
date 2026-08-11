@@ -27,7 +27,9 @@ import com.campuscart.user.service.UserService;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
@@ -126,7 +128,7 @@ public class OrderService {
     @Transactional
     public OrderResponse transition(UUID principalId, UUID orderId, OrderStatus target) {
         User principal = userService.requireActive(principalId);
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Order", orderId));
         authorizeTransition(principal, order, target);
         try {
@@ -188,7 +190,18 @@ public class OrderService {
     }
 
     private PageResponse<OrderResponse> pageResponse(org.springframework.data.domain.Page<Order> page) {
-        return PageResponse.from(page.map(this::toResponse));
+        List<UUID> orderIds = page.getContent().stream().map(Order::getId).toList();
+        // Bulk-load items (with seller fetched) and payments for the whole page so the
+        // mapper does not fire a per-order query — avoids an N+1 on the history endpoints.
+        Map<UUID, List<OrderItem>> itemsByOrder = orderIds.isEmpty() ? Map.of()
+                : orderItemRepository.findByOrderIdInFetchSeller(orderIds).stream()
+                        .collect(Collectors.groupingBy(item -> item.getOrder().getId()));
+        Map<UUID, Payment> paymentByOrder = orderIds.isEmpty() ? Map.of()
+                : paymentRepository.findByOrderIdIn(orderIds).stream()
+                        .collect(Collectors.toMap(payment -> payment.getOrder().getId(), payment -> payment));
+        return PageResponse.from(page.map(order -> toResponse(order,
+                itemsByOrder.getOrDefault(order.getId(), List.of()),
+                paymentByOrder.get(order.getId()))));
     }
 
     private PageRequest pageRequest(int page, int size) {
@@ -199,15 +212,23 @@ public class OrderService {
     }
 
     private OrderResponse toResponse(Order order) {
-        List<OrderItemResponse> items = orderItemRepository.findByOrderIdOrderByCreatedAtAsc(order.getId()).stream()
+        List<OrderItem> items = orderItemRepository.findByOrderIdOrderByCreatedAtAsc(order.getId());
+        Payment payment = paymentRepository.findByOrderId(order.getId())
+                .orElseThrow(() -> ResourceNotFoundException.of("Payment", order.getId()));
+        return toResponse(order, items, payment);
+    }
+
+    private OrderResponse toResponse(Order order, List<OrderItem> items, Payment payment) {
+        if (payment == null) {
+            throw ResourceNotFoundException.of("Payment", order.getId());
+        }
+        List<OrderItemResponse> itemResponses = items.stream()
                 .map(item -> new OrderItemResponse(item.getId(), item.getProduct().getId(), item.getSeller().getId(),
                         item.getSeller().getFullName(), item.getProductTitle(), item.getUnitPrice(), item.getQuantity(),
                         item.getLineTotal()))
                 .toList();
-        var payment = paymentRepository.findByOrderId(order.getId())
-                .orElseThrow(() -> ResourceNotFoundException.of("Payment", order.getId()));
         return new OrderResponse(order.getId(), order.getBuyer().getId(), order.getTotalAmount(), order.getStatus(),
-                payment.getStatus(), items, order.getCreatedAt(), order.getUpdatedAt(), order.getVersion());
+                payment.getStatus(), itemResponses, order.getCreatedAt(), order.getUpdatedAt(), order.getVersion());
     }
 
     private record LockedPurchase(Product product, int quantity) { }

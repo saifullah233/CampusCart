@@ -3,7 +3,8 @@
 # Values below are LOCAL DEVELOPMENT DEFAULTS ONLY. Never use these credentials in
 # any shared or production environment. Override via a git-ignored .env file.
 #
-# NOTE: MySQL and Redis are provisioned here for persistence and later OTP modules.
+# NOTE: MySQL is required. Redis is optional local infrastructure for future modules;
+# the current backend does not connect to Redis.
 # The app requires JWT_SECRET at runtime; it is never given a default.
 
 services:
@@ -16,7 +17,7 @@ services:
       MYSQL_USER: ${MYSQL_USER:-campuscart}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -31,7 +32,7 @@ services:
     container_name: campuscart-redis
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -48,8 +49,6 @@ services:
     container_name: campuscart-app
     depends_on:
       mysql:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     ports:
       - "8080:8080"

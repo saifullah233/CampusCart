@@ -25,6 +25,7 @@ public enum ErrorCode {
     // since that distinction only aids an attacker.
     AUTHENTICATION_REQUIRED(HttpStatus.UNAUTHORIZED),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED),
+    LOGIN_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED),
     ACCESS_DENIED(HttpStatus.FORBIDDEN),
     ACCOUNT_NOT_ACTIVE(HttpStatus.FORBIDDEN),

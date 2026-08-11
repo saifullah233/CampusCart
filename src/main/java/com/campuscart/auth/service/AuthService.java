@@ -18,6 +18,7 @@ import com.campuscart.common.util.ContactNormalizer;
 import com.campuscart.location.domain.City;
 import com.campuscart.location.repository.CityRepository;
 import com.campuscart.security.JwtService;
+import com.campuscart.security.login.LoginRateLimitService;
 import com.campuscart.security.otp.OtpChannel;
 import com.campuscart.security.refresh.IssuedRefreshToken;
 import com.campuscart.security.refresh.RefreshTokenService;
@@ -42,6 +43,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final UserMapper userMapper;
+    private final LoginRateLimitService loginRateLimitService;
 
     public AuthService(UserRepository userRepository,
                        CityRepository cityRepository,
@@ -50,7 +52,8 @@ public class AuthService {
                        OtpService otpService,
                        JwtService jwtService,
                        RefreshTokenService refreshTokenService,
-                       UserMapper userMapper) {
+                       UserMapper userMapper,
+                       LoginRateLimitService loginRateLimitService) {
         this.userRepository = userRepository;
         this.cityRepository = cityRepository;
         this.collegeEmailValidator = collegeEmailValidator;
@@ -59,6 +62,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.userMapper = userMapper;
+        this.loginRateLimitService = loginRateLimitService;
     }
 
     @Transactional
@@ -103,14 +107,21 @@ public class AuthService {
     @Transactional
     public AuthTokenResponse login(LoginRequest request) {
         String email = ContactNormalizer.email(request.email());
-        User user = userRepository.findByEmail(email).orElseThrow(InvalidCredentialsException::new);
+        loginRateLimitService.ensureAllowed(email);
+        User user = userRepository.findByEmail(email).orElseThrow(() -> {
+            loginRateLimitService.recordFailure(email);
+            return new InvalidCredentialsException();
+        });
         if (user.getPasswordHash() == null
                 || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            loginRateLimitService.recordFailure(email);
             throw new InvalidCredentialsException();
         }
         if (!user.getStatus().canAuthenticate()) {
+            loginRateLimitService.recordSuccess(email);
             throw new AccountNotActiveException();
         }
+        loginRateLimitService.recordSuccess(email);
         return issueTokens(user);
     }
 

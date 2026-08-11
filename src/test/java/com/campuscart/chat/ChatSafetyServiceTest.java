@@ -25,4 +25,10 @@ class ChatSafetyServiceTest {
                 .isInstanceOf(com.campuscart.common.exception.UnsafeContentException.class);
         safety.validateText("Is the calculator still available?");
     }
+
+    @Test
+    void blocksOverlyLongMessages() {
+        assertThatThrownBy(() -> safety.validateText("a".repeat(2_001)))
+                .isInstanceOf(com.campuscart.common.exception.UnsafeContentException.class);
+    }
 }

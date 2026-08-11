@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -159,6 +160,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ex.getMessage(), path(request), null);
         return ResponseEntity.status(ErrorCode.METHOD_NOT_ALLOWED.status())
                 .body(ApiResponse.failure("HTTP method not supported for this endpoint.", error));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(TypeMismatchException ex,
+                                                        HttpHeaders headers,
+                                                        HttpStatusCode status,
+                                                        WebRequest request) {
+        ApiError error = new ApiError(ErrorCode.MALFORMED_REQUEST.name(),
+                "Request parameter is invalid.", path(request), null);
+        return ResponseEntity.status(ErrorCode.MALFORMED_REQUEST.status())
+                .body(ApiResponse.failure("Request parameter is invalid.", error));
     }
 
     private ApiError.FieldViolation toFieldViolation(FieldError fieldError) {

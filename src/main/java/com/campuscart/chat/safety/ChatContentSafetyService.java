@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class ChatContentSafetyService {
 
+    private static final int MAX_TEXT_LENGTH = 2_000;
     private static final Pattern EMAIL = Pattern.compile(
             "\\b[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}\\b");
     private static final Pattern PHONE = Pattern.compile(
@@ -34,6 +35,9 @@ public class ChatContentSafetyService {
                 .trim();
         if (normalized.isEmpty()) {
             throw new UnsafeContentException("Message content is required.");
+        }
+        if (normalized.length() > MAX_TEXT_LENGTH) {
+            throw new UnsafeContentException("Message content must not exceed 2000 characters.");
         }
         if (EMAIL.matcher(normalized).find() || PHONE.matcher(normalized).find()
                 || LINK_OR_HANDLE.matcher(normalized).find()) {

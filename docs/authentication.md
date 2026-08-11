@@ -57,6 +57,9 @@ gateway with an in-memory capture without changing the application flow.
   SHA-256 hashes are persisted.
 - Reuse of a rotated refresh token revokes the user's remaining active refresh tokens.
 - Suspended or pending accounts cannot log in, refresh, or access the profile API.
+- Repeated invalid password attempts are rate limited by a persisted hashed lookup key. The
+  default policy permits five failed attempts per normalized email within fifteen minutes
+  before returning `LOGIN_RATE_LIMITED` for fifteen minutes.
 
 ## User Profile
 
@@ -72,5 +75,8 @@ parameter can select another user's profile or assign a role, city, college, or 
 OTP limits are configured under `security.otp.*` and can be overridden through the
 `OTP_TTL`, `OTP_RESEND_COOLDOWN`, `OTP_RATE_WINDOW`, `OTP_MAX_ATTEMPTS`,
 `OTP_MAX_SENDS_PER_WINDOW`, and `OTP_CODE_LENGTH` environment variables.
+
+Login abuse limits are configured under `security.login.*` and can be overridden through
+`LOGIN_MAX_FAILURES`, `LOGIN_RATE_WINDOW`, and `LOGIN_LOCKOUT`.
 
 No OTP, database, SMTP, SMS, password, or JWT secret is committed to the repository.

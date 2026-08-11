@@ -18,6 +18,9 @@ spring:
         # deterministically regardless of the JVM/DB session time zone.
         jdbc:
           time_zone: UTC
+        # Batch LAZY association initialisations into IN-clause loads so paged list
+        # endpoints cannot silently degrade into per-row N+1 lookups.
+        default_batch_fetch_size: 50
 
   flyway:
     enabled: true
@@ -70,6 +73,10 @@ security:
     max-attempts: ${OTP_MAX_ATTEMPTS:5}
     max-sends-per-window: ${OTP_MAX_SENDS_PER_WINDOW:5}
     code-length: ${OTP_CODE_LENGTH:6}
+  login:
+    max-failures: ${LOGIN_MAX_FAILURES:5}
+    window: ${LOGIN_RATE_WINDOW:15m}
+    lockout: ${LOGIN_LOCKOUT:15m}
 
 cloudinary:
   enabled: ${CLOUDINARY_ENABLED:false}

@@ -25,7 +25,7 @@ and a feature-based, DDD-inspired modular architecture.
 | Build | Maven |
 | Datastore | MySQL 8, Flyway |
 | Security | Spring Security, signed JWT access tokens, hashed rotating refresh tokens |
-| Cache/OTP (later parts) | Redis 7 |
+| Optional cache/rate-limit infrastructure (future) | Redis 7 |
 | Containerization | Docker, Docker Compose |
 
 > **JDK note:** The build targets **Java 21** bytecode (`maven.compiler.release=21`) and
@@ -86,18 +86,21 @@ commit the secret or a shared `.env` file.
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-### Infrastructure (MySQL + Redis) via Docker
+### Infrastructure via Docker
 
 Before starting Compose, provide `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`,
 `DB_PASSWORD`, and `JWT_SECRET` in the shell or a git-ignored `.env` file. The
 database password used by the app should match `MYSQL_PASSWORD`.
 
 ```bash
-docker compose up -d mysql redis
+docker compose up -d mysql
 ```
 
 > Compose credentials are **local development defaults only**. Override them with a
 > git-ignored `.env` file; never reuse them in shared environments.
+> MySQL and Redis ports are bound to `127.0.0.1` for local development. Redis is
+> provisioned as optional future infrastructure only; current OTP and login abuse
+> protection use the database-backed implementation in this backend.
 
 ---
 

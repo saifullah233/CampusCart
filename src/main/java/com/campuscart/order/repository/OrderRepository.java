@@ -13,9 +13,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    @Override
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    java.util.Optional<Order> findById(UUID id);
+    @Query("select purchaseOrder from Order purchaseOrder where purchaseOrder.id = :id")
+    java.util.Optional<Order> findByIdForUpdate(@Param("id") UUID id);
 
     Page<Order> findByBuyerIdOrderByCreatedAtDesc(UUID buyerId, Pageable pageable);
 

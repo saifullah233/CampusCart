@@ -252,6 +252,29 @@ class AuthFlowIntegrationTest extends AbstractMySqlIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("ACCOUNT_NOT_ACTIVE"));
     }
 
+    @Test
+    @Transactional
+    void repeatedInvalidLoginAttemptsAreRateLimited() throws Exception {
+        JsonNode registration = registerStudent();
+        String email = entityManager.createQuery("select user.email from User user where user.id = :id", String.class)
+                .setParameter("id", UUID.fromString(registration.get("data").get("userId").asText()))
+                .getSingleResult();
+
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsBytes(new LoginRequest(email, "wrong password"))))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_CREDENTIALS.name()));
+        }
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(new LoginRequest(email, "wrong password"))))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.LOGIN_RATE_LIMITED.name()));
+    }
+
     private JsonNode registerStudent() throws Exception {
         String domain = entityManager.createQuery(
                         "select domain.domain from CollegeEmailDomain domain where domain.college.id = :collegeId",

@@ -7,6 +7,7 @@ import com.campuscart.chat.dto.ReviewReportRequest;
 import com.campuscart.audit.service.AuditLogService;
 import com.campuscart.chat.repository.ChatReportRepository;
 import com.campuscart.common.api.PageResponse;
+import com.campuscart.common.exception.InvalidRequestException;
 import com.campuscart.common.exception.InvalidReportException;
 import com.campuscart.common.exception.ResourceNotFoundException;
 import com.campuscart.user.domain.User;
@@ -101,7 +102,7 @@ public class ChatReportService {
 
     private void validatePage(int page, int size) {
         if (page < 0 || size < 1 || size > 50) {
-            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 50.");
+            throw new InvalidRequestException("Page must be non-negative and size must be between 1 and 50.");
         }
     }
 }

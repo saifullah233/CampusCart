@@ -2,7 +2,6 @@ package com.campuscart.user.repository;
 
 import com.campuscart.user.domain.User;
 import com.campuscart.user.domain.AccountStatus;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -23,7 +22,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsByPhoneNumber(String phoneNumber);
 
-    List<User> findByStatus(AccountStatus status);
+    @EntityGraph(attributePaths = {"city", "college"})
+    Page<User> findByStatus(AccountStatus status, Pageable pageable);
 
     long countByStatus(AccountStatus status);
 

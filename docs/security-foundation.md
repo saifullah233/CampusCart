@@ -23,6 +23,8 @@ scope.
   credentials; they validate all input and return only standard envelopes.
 - Filter-chain failures use the same `ApiResponse` and `ApiError` envelope as MVC failures.
   They return generic 401/403 messages and never include exception details or stack traces.
+- Invalid path/query parameter conversions are normalized to a `MALFORMED_REQUEST` response,
+  not a stack trace or generic 500.
 
 ## Access Tokens
 
@@ -72,6 +74,9 @@ refresh endpoint is exposed yet.
 - Controllers must derive ownership from `@AuthenticationPrincipal AuthenticatedUser.id()`
   or a service-level current-user abstraction. A request body or path parameter must never
   be treated as proof of ownership.
+- Credential login is protected by `login_rate_limits`, which stores only a SHA-256 hash of
+  the normalized email lookup key. By default, five failed attempts in fifteen minutes lock
+  that key for fifteen minutes and return `LOGIN_RATE_LIMITED`.
 
 ## CORS
 
@@ -90,9 +95,13 @@ JWT_SECRET=<random value with at least 32 characters>
 ```
 
 Optional variables include `JWT_ISSUER`, `JWT_ACCESS_TOKEN_TTL`,
-`JWT_REFRESH_TOKEN_TTL`, and `CORS_ALLOWED_ORIGINS`. Docker Compose fails fast when
-`JWT_SECRET` is absent. No secret belongs in `application.yml`, Dockerfiles, source files,
-or committed `.env` files.
+`JWT_REFRESH_TOKEN_TTL`, `LOGIN_MAX_FAILURES`, `LOGIN_RATE_WINDOW`, `LOGIN_LOCKOUT`,
+and `CORS_ALLOWED_ORIGINS`. Docker Compose fails fast when `JWT_SECRET` is absent. No
+secret belongs in `application.yml`, Dockerfiles, source files, or committed `.env` files.
+
+Redis is present in Compose only as optional local infrastructure for future modules. The
+current backend does not connect to Redis; OTP and login abuse protection are database
+backed. Compose binds database and Redis ports to `127.0.0.1` for local development.
 
 ## Verification
 

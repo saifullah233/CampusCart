@@ -1,0 +1,175 @@
+﻿Standard Commons Logging discovery in action with spring-jcl: please remove commons-logging.jar from classpath in order to avoid potential conflicts
+19:36:16.850 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.campuscart.CampusCartApplication for test class com.campuscart.auth.AuthFlowIntegrationTest
+19:36:16.999 [main] INFO org.testcontainers.images.PullPolicy -- Image pull policy will be performed by: DefaultPullPolicy()
+19:36:17.003 [main] INFO org.testcontainers.utility.ImageNameSubstitutor -- Image name substitution will be performed by: DefaultImageNameSubstitutor (composite of 'ConfigurationFileImageNameSubstitutor' and 'PrefixingImageNameSubstitutor')
+19:36:17.010 [main] INFO org.testcontainers.DockerClientFactory -- Testcontainers version: 1.21.4
+19:36:17.189 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Loaded org.testcontainers.dockerclient.NpipeSocketClientProviderStrategy from ~/.testcontainers.properties, will try it first
+19:36:17.477 [main] INFO org.testcontainers.dockerclient.DockerClientProviderStrategy -- Found Docker environment with local Npipe socket (npipe:////./pipe/docker_engine)
+19:36:17.478 [main] INFO org.testcontainers.DockerClientFactory -- Docker host IP address is localhost
+19:36:17.497 [main] INFO org.testcontainers.DockerClientFactory -- Connected to docker: 
+  Server Version: 29.6.2
+  API Version: 1.55
+  Operating System: Docker Desktop
+  Total Memory: 7658 MB
+  Labels: 
+    com.docker.desktop.address=npipe://\\.\pipe\docker_cli
+19:36:17.549 [main] INFO tc.testcontainers/ryuk:0.12.0 -- Creating container for image: testcontainers/ryuk:0.12.0
+19:36:18.060 [main] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 is starting: b01b6fd5e58213fde2b3f532a2700eb6056bddcd82e76bb16c663344e566c161
+19:36:18.425 [main] INFO tc.testcontainers/ryuk:0.12.0 -- Container testcontainers/ryuk:0.12.0 started in PT0.8765815S
+19:36:18.434 [main] INFO org.testcontainers.utility.RyukResourceReaper -- Ryuk started - will monitor and terminate Testcontainers containers on JVM exit
+19:36:18.434 [main] INFO org.testcontainers.DockerClientFactory -- Checking the system...
+19:36:18.434 [main] INFO org.testcontainers.DockerClientFactory -- ?? Docker server version should be at least 1.6.0
+19:36:18.438 [main] INFO tc.mysql:8.0 -- Creating container for image: mysql:8.0
+19:36:18.631 [main] INFO tc.mysql:8.0 -- Container mysql:8.0 is starting: 9b43027b49b94b45b05d8df1847977bd56be919057b27c6f9e397ee415f88d37
+19:36:18.910 [main] INFO tc.mysql:8.0 -- Waiting for database connection to become available at jdbc:mysql://localhost:51267/campuscart using query 'SELECT 1'
+19:36:43.866 [main] INFO tc.mysql:8.0 -- Container mysql:8.0 started in PT25.4287758S
+19:36:43.866 [main] INFO tc.mysql:8.0 -- Container is started (JDBC URL: jdbc:mysql://localhost:51267/campuscart)
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-08-11T19:36:44.170+05:30  INFO 24024 --- [campuscart-backend] [           main] c.c.auth.AuthFlowIntegrationTest         : Starting AuthFlowIntegrationTest using Java 21.0.11 with PID 24024 (started by saifu in C:\Users\saifu\OneDrive\Desktop\CampusCart)
+2026-08-11T19:36:44.172+05:30  INFO 24024 --- [campuscart-backend] [           main] c.c.auth.AuthFlowIntegrationTest         : No active profile set, falling back to 1 default profile: "default"
+2026-08-11T19:36:45.420+05:30  INFO 24024 --- [campuscart-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-11T19:36:45.582+05:30  INFO 24024 --- [campuscart-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 151 ms. Found 23 JPA repository interfaces.
+2026-08-11T19:36:46.320+05:30  INFO 24024 --- [campuscart-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-08-11T19:36:46.570+05:30  INFO 24024 --- [campuscart-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@7866a7a6
+2026-08-11T19:36:46.572+05:30  INFO 24024 --- [campuscart-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-08-11T19:36:46.609+05:30  INFO 24024 --- [campuscart-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:51267/campuscart (MySQL 8.0)
+2026-08-11T19:36:46.980+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Schema history table `campuscart`.`flyway_schema_history` does not exist yet
+2026-08-11T19:36:46.986+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 14 migrations (execution time 00:00.032s)
+2026-08-11T19:36:47.010+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.c.i.s.JdbcTableSchemaHistory         : Creating Schema History table `campuscart`.`flyway_schema_history` ...
+2026-08-11T19:36:47.213+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `campuscart`: << Empty Schema >>
+2026-08-11T19:36:47.226+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "1 - geo and institutions"
+2026-08-11T19:36:47.795+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "2 - users"
+2026-08-11T19:36:48.087+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "3 - categories"
+2026-08-11T19:36:48.297+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "4 - user auth columns"
+2026-08-11T19:36:48.699+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "5 - refresh tokens"
+2026-08-11T19:36:49.349+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "6 - user registration fields"
+2026-08-11T19:36:50.628+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "7 - otp challenges"
+2026-08-11T19:36:51.092+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "8 - products and images"
+2026-08-11T19:36:52.413+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "9 - wishlist cart orders payments"
+2026-08-11T19:36:54.607+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "10 - chat notifications moderation"
+2026-08-11T19:36:57.888+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "11 - reported users"
+2026-08-11T19:36:59.807+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "12 - reviews and product reports"
+2026-08-11T19:37:02.931+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "13 - admin reference data and audit logs"
+2026-08-11T19:37:04.832+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Migrating schema `campuscart` to version "14 - login rate limits"
+2026-08-11T19:37:05.054+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Successfully applied 14 migrations to schema `campuscart`, now at version v14 (execution time 00:17.169s)
+2026-08-11T19:37:05.175+05:30  INFO 24024 --- [campuscart-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-08-11T19:37:05.246+05:30  INFO 24024 --- [campuscart-backend] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.53.Final
+2026-08-11T19:37:05.283+05:30  INFO 24024 --- [campuscart-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-08-11T19:37:05.674+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-11T19:37:05.756+05:30  INFO 24024 --- [campuscart-backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 8.0.46
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-08-11T19:37:06.831+05:30  INFO 24024 --- [campuscart-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-08-11T19:37:06.873+05:30  INFO 24024 --- [campuscart-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-11T19:37:07.192+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-08-11T19:37:09.014+05:30  INFO 24024 --- [campuscart-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name campusCartUserDetailsService
+2026-08-11T19:37:09.549+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-08-11T19:37:10.052+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-08-11T19:37:10.053+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-08-11T19:37:10.054+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-08-11T19:37:10.112+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-08-11T19:37:10.112+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@5b8af66c]]
+2026-08-11T19:37:10.113+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-08-11T19:37:10.122+05:30  INFO 24024 --- [campuscart-backend] [           main] c.c.auth.AuthFlowIntegrationTest         : Started AuthFlowIntegrationTest in 26.224 seconds (process running for 54.087)
+2026-08-11T19:37:10.214+05:30  WARN 24024 --- [campuscart-backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-08-11T19:37:10.214+05:30  WARN 24024 --- [campuscart-backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+mvn : Mockito is currently self-attaching to enable the inline-mock-maker. 
+This will no longer work in future releases of the JDK. Please add Mockito as 
+an agent to your build as described in Mockito's documentation: https://javadoc
+.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.
+3
+At line:1 char:1
++ mvn -q '-Dtest=AuthFlowIntegrationTest,SecurityIntegrationTest,ImageF ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Mockito is curr...ockito.html#0.3 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: A Java agent has been loaded dynamically (C:\Users\saifu\.m2\repositor
+y\net\bytebuddy\byte-buddy-agent\1.17.8\byte-buddy-agent-1.17.8.jar)
+WARNING: If a serviceability tool is in use, please run with 
+-XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with 
+-Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future 
+release
+Java HotSpot(TM) 64-Bit Server VM warning: Sharing is only supported for boot 
+loader classes because bootstrap classpath has been appended
+2026-08-11T19:37:11.593+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_INVALID] on POST /api/v1/otp/verify
+2026-08-11T19:37:11.793+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_INVALID] on POST /api/v1/otp/verify
+2026-08-11T19:37:11.990+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_INVALID] on POST /api/v1/otp/verify
+2026-08-11T19:37:12.185+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_INVALID] on POST /api/v1/otp/verify
+2026-08-11T19:37:12.396+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_ATTEMPTS_EXCEEDED] on POST /api/v1/otp/verify
+2026-08-11T19:37:13.756+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [ACCOUNT_NOT_ACTIVE] on POST /api/v1/auth/login
+2026-08-11T19:37:13.827+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [BUSINESS_RULE_VIOLATION] on POST /api/v1/auth/register/student
+2026-08-11T19:37:14.546+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [INVALID_CREDENTIALS] on POST /api/v1/auth/login
+2026-08-11T19:37:14.775+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [INVALID_CREDENTIALS] on POST /api/v1/auth/login
+2026-08-11T19:37:14.999+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [INVALID_CREDENTIALS] on POST /api/v1/auth/login
+2026-08-11T19:37:15.228+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [INVALID_CREDENTIALS] on POST /api/v1/auth/login
+2026-08-11T19:37:15.460+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [INVALID_CREDENTIALS] on POST /api/v1/auth/login
+2026-08-11T19:37:15.473+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [LOGIN_RATE_LIMITED] on POST /api/v1/auth/login
+2026-08-11T19:37:15.917+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_COOLDOWN] on POST /api/v1/otp/resend
+2026-08-11T19:37:16.587+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [INVALID_TOKEN] on POST /api/v1/auth/refresh
+2026-08-11T19:37:18.742+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Handled application exception [OTP_INVALID] on POST /api/v1/otp/verify
+2026-08-11T19:37:19.049+05:30  INFO 24024 --- [campuscart-backend] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.campuscart.security.SecurityIntegrationTest]: SecurityIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-08-11T19:37:19.092+05:30  INFO 24024 --- [campuscart-backend] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.campuscart.CampusCartApplication for test class com.campuscart.security.SecurityIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::               (v3.5.16)
+
+2026-08-11T19:37:19.117+05:30  INFO 24024 --- [campuscart-backend] [           main] c.c.security.SecurityIntegrationTest     : Starting SecurityIntegrationTest using Java 21.0.11 with PID 24024 (started by saifu in C:\Users\saifu\OneDrive\Desktop\CampusCart)
+2026-08-11T19:37:19.118+05:30  INFO 24024 --- [campuscart-backend] [           main] c.c.security.SecurityIntegrationTest     : No active profile set, falling back to 1 default profile: "default"
+2026-08-11T19:37:19.594+05:30  INFO 24024 --- [campuscart-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-08-11T19:37:19.660+05:30  INFO 24024 --- [campuscart-backend] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 64 ms. Found 23 JPA repository interfaces.
+2026-08-11T19:37:19.730+05:30  INFO 24024 --- [campuscart-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-08-11T19:37:19.751+05:30  INFO 24024 --- [campuscart-backend] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection com.mysql.cj.jdbc.ConnectionImpl@3bda8856
+2026-08-11T19:37:19.751+05:30  INFO 24024 --- [campuscart-backend] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-08-11T19:37:19.758+05:30  INFO 24024 --- [campuscart-backend] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:mysql://localhost:51267/campuscart (MySQL 8.0)
+2026-08-11T19:37:19.785+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 14 migrations (execution time 00:00.018s)
+2026-08-11T19:37:19.797+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema `campuscart`: 14
+2026-08-11T19:37:19.798+05:30  INFO 24024 --- [campuscart-backend] [           main] o.f.core.internal.command.DbMigrate      : Schema `campuscart` is up to date. No migration necessary.
+2026-08-11T19:37:19.832+05:30  INFO 24024 --- [campuscart-backend] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-08-11T19:37:19.835+05:30  INFO 24024 --- [campuscart-backend] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-08-11T19:37:19.843+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-08-11T19:37:19.846+05:30  INFO 24024 --- [campuscart-backend] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-2)']
+	Database driver: undefined/unknown
+	Database version: 8.0.46
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-08-11T19:37:20.025+05:30  INFO 24024 --- [campuscart-backend] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-08-11T19:37:20.038+05:30  INFO 24024 --- [campuscart-backend] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-08-11T19:37:20.462+05:30  INFO 24024 --- [campuscart-backend] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name campusCartUserDetailsService
+2026-08-11T19:37:20.566+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-08-11T19:37:20.678+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-08-11T19:37:20.679+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-08-11T19:37:20.679+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-08-11T19:37:20.687+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Starting...
+2026-08-11T19:37:20.687+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : BrokerAvailabilityEvent[available=true, SimpleBrokerMessageHandler [org.springframework.messaging.simp.broker.DefaultSubscriptionRegistry@7231ce30]]
+2026-08-11T19:37:20.687+05:30  INFO 24024 --- [campuscart-backend] [           main] o.s.m.s.b.SimpleBrokerMessageHandler     : Started.
+2026-08-11T19:37:20.692+05:30  INFO 24024 --- [campuscart-backend] [           main] c.c.security.SecurityIntegrationTest     : Started SecurityIntegrationTest in 1.597 seconds (process running for 64.658)
+2026-08-11T19:37:20.693+05:30  WARN 24024 --- [campuscart-backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-08-11T19:37:20.693+05:30  WARN 24024 --- [campuscart-backend] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+2026-08-11T19:37:20.777+05:30  WARN 24024 --- [campuscart-backend] [           main] c.c.c.exception.GlobalExceptionHandler   : Access denied on GET /test/security/admin

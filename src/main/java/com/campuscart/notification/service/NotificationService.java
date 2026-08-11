@@ -14,7 +14,6 @@ import com.campuscart.user.domain.AccountStatus;
 import com.campuscart.user.domain.User;
 import com.campuscart.user.repository.UserRepository;
 import java.time.Clock;
-import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -26,6 +25,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Service
 public class NotificationService {
+
+    private static final int NEW_PRODUCT_NOTIFICATION_BATCH_SIZE = 100;
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -47,6 +48,17 @@ public class NotificationService {
                                        String content, String dataJson) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> ResourceNotFoundException.of("User", userId));
+        return create(user, type, title, content, dataJson);
+    }
+
+    /**
+     * Persist + publish for an already-loaded recipient. Fan-out callers that already
+     * hold the {@link User} (e.g. the new-product broadcast) use this overload to avoid
+     * re-fetching every recipient by id.
+     */
+    @Transactional
+    public NotificationResponse create(User user, NotificationType type, String title,
+                                       String content, String dataJson) {
         Notification notification = notificationRepository.save(
                 new Notification(user, type, title, content, dataJson));
         NotificationResponse response = toResponse(notification);
@@ -59,11 +71,19 @@ public class NotificationService {
         if (product.getStatus() != ProductStatus.ACTIVE) {
             return;
         }
-        userRepository.findByStatus(AccountStatus.ACTIVE).stream()
-                .filter(user -> !user.getId().equals(product.getSeller().getId()))
-                .filter(user -> canDiscover(product, user))
-                .forEach(user -> create(user.getId(), NotificationType.NEW_PRODUCT, "New product available",
-                        product.getTitle() + " is now available.", "{\"productId\":\"" + product.getId() + "\"}"));
+        int page = 0;
+        org.springframework.data.domain.Page<User> users;
+        do {
+            users = userRepository.findByStatus(AccountStatus.ACTIVE,
+                    PageRequest.of(page, NEW_PRODUCT_NOTIFICATION_BATCH_SIZE, Sort.by("id")));
+            users.stream()
+                    .filter(user -> !user.getId().equals(product.getSeller().getId()))
+                    .filter(user -> canDiscover(product, user))
+                    .forEach(user -> create(user, NotificationType.NEW_PRODUCT, "New product available",
+                            product.getTitle() + " is now available.",
+                            "{\"productId\":\"" + product.getId() + "\"}"));
+            page++;
+        } while (users.hasNext());
     }
 
     @Transactional(readOnly = true)
@@ -89,10 +109,7 @@ public class NotificationService {
 
     @Transactional
     public long markAllRead(UUID userId) {
-        var unread = notificationRepository.findByUserIdAndReadAtIsNull(userId);
-        Instant now = clock.instant();
-        unread.forEach(notification -> notification.markRead(now));
-        return unread.size();
+        return notificationRepository.markAllUnreadAsRead(userId, clock.instant());
     }
 
     private boolean canDiscover(Product product, User viewer) {

@@ -20,6 +20,7 @@ import com.campuscart.chat.safety.ChatContentSafetyService;
 import com.campuscart.chat.safety.ChatImageSafetyScanner;
 import com.campuscart.common.api.PageResponse;
 import com.campuscart.common.exception.DuplicateResourceException;
+import com.campuscart.common.exception.InvalidRequestException;
 import com.campuscart.common.exception.InvalidReportException;
 import com.campuscart.common.exception.ProductUnavailableException;
 import com.campuscart.common.exception.ResourceNotFoundException;
@@ -34,7 +35,10 @@ import com.campuscart.user.domain.User;
 import com.campuscart.user.service.UserService;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -108,9 +112,17 @@ public class ChatService {
     public PageResponse<ConversationResponse> list(UUID userId, int page, int size) {
         userService.requireActive(userId);
         validatePage(page, size);
-        return PageResponse.from(conversationRepository.findByParticipant(userId,
-                        PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt")))
-                .map(conversation -> toConversationResponse(conversation, userId)));
+        var conversations = conversationRepository.findByParticipant(userId,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt")));
+        // Batch the unread counts for the whole page instead of one count query per row.
+        List<UUID> conversationIds = conversations.getContent().stream().map(Conversation::getId).toList();
+        Map<UUID, Long> unreadByConversation = conversationIds.isEmpty() ? Map.of()
+                : messageRepository.countUnreadForRecipientByConversationIds(conversationIds, userId).stream()
+                        .collect(Collectors.toMap(
+                                ChatMessageRepository.ConversationUnreadCount::getConversationId,
+                                ChatMessageRepository.ConversationUnreadCount::getUnread));
+        return PageResponse.from(conversations.map(conversation -> toConversationResponse(conversation,
+                unreadByConversation.getOrDefault(conversation.getId(), 0L))));
     }
 
     @Transactional(readOnly = true)
@@ -265,11 +277,16 @@ public class ChatService {
     }
 
     private ConversationResponse toConversationResponse(Conversation conversation, UUID viewerId) {
+        return toConversationResponse(conversation,
+                messageRepository.countUnreadForRecipient(conversation.getId(), viewerId));
+    }
+
+    private ConversationResponse toConversationResponse(Conversation conversation, long unreadCount) {
         return new ConversationResponse(conversation.getId(), conversation.getBuyer().getId(),
                 conversation.getBuyer().getFullName(), conversation.getSeller().getId(),
                 conversation.getSeller().getFullName(), conversation.getProduct().getId(),
                 conversation.getProduct().getTitle(), conversation.getLastMessageAt(),
-                messageRepository.countUnreadForRecipient(conversation.getId(), viewerId));
+                unreadCount);
     }
 
     private ChatMessageResponse toMessageResponse(ChatMessage message) {
@@ -310,7 +327,7 @@ public class ChatService {
 
     private void validatePage(int page, int size) {
         if (page < 0 || size < 1 || size > 50) {
-            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 50.");
+            throw new InvalidRequestException("Page must be non-negative and size must be between 1 and 50.");
         }
     }
 }
