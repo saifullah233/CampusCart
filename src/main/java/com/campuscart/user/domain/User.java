@@ -101,12 +101,24 @@ public class User extends BaseEntity {
         this.college = college;
     }
 
+    public User(String email, String fullName, College college, String phoneNumber) {
+        this.email = email;
+        this.fullName = fullName;
+        this.city = college.getCity();
+        this.college = college;
+        this.phoneNumber = phoneNumber;
+    }
+
     private User(String email, String fullName, City city, String phoneNumber) {
         this.email = email;
         this.fullName = fullName;
         this.city = city;
         this.phoneNumber = phoneNumber;
         this.accountType = UserType.COMMUNITY;
+    }
+
+    public static User student(String email, String fullName, College college, String phoneNumber) {
+        return new User(email, fullName, college, phoneNumber);
     }
 
     public static User community(String email, String fullName, City city, String phoneNumber) {
@@ -119,6 +131,10 @@ public class User extends BaseEntity {
 
     public String getPhoneNumber() {
         return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
     }
 
     public void setEmail(String email) {
@@ -150,9 +166,22 @@ public class User extends BaseEntity {
         return phoneVerified;
     }
 
-    /** Marks proof of email ownership supplied by the later verification flow. */
+    /** Marks proof of email ownership and activates the account. */
     public void markEmailVerified() {
         this.emailVerified = true;
+        checkAndActivate();
+    }
+
+    /** Marks proof of phone ownership (retained for backward compatibility). */
+    public void markPhoneVerified() {
+        this.phoneVerified = true;
+        checkAndActivate();
+    }
+
+    private void checkAndActivate() {
+        if (emailVerified) {
+            this.status = AccountStatus.ACTIVE;
+        }
     }
 
     public Role getRole() {
@@ -167,13 +196,13 @@ public class User extends BaseEntity {
         return accountType;
     }
 
-    /** Activates a student account only after official email verification. */
+    /** Activates an account after email verification (test/fixture compatibility). */
     public void activateAfterEmailVerification() {
         this.emailVerified = true;
         this.status = AccountStatus.ACTIVE;
     }
 
-    /** Activates a community account only after phone verification. */
+    /** Activates an account after phone verification (test/fixture compatibility). */
     public void activateAfterPhoneVerification() {
         this.phoneVerified = true;
         this.status = AccountStatus.ACTIVE;
@@ -181,7 +210,9 @@ public class User extends BaseEntity {
 
     /** Retained as a compatibility alias for existing persistence fixtures. */
     public void activateAfterVerification() {
-        activateAfterEmailVerification();
+        this.emailVerified = true;
+        this.phoneVerified = true;
+        this.status = AccountStatus.ACTIVE;
     }
 
     /** Suspends the account through an operator-controlled server action. */

@@ -31,6 +31,18 @@ spring:
       max-file-size: 5MB
       max-request-size: 25MB
 
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
+
 server:
   port: 8080
   error:
@@ -83,6 +95,27 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:}
   api-key: ${CLOUDINARY_API_KEY:}
   api-secret: ${CLOUDINARY_API_SECRET:}
+
+mail:
+  from: ${MAIL_FROM:noreply@campuscart.local}
+
+twilio:
+  account-sid: ${TWILIO_ACCOUNT_SID:}
+  auth-token: ${TWILIO_AUTH_TOKEN:}
+  from-number: ${TWILIO_FROM_PHONE_NUMBER:${TWILIO_FROM_NUMBER:}}
+
+fast2sms:
+  api-key: ${FAST2SMS_API_KEY:}
+  whatsapp-message-id: ${FAST2SMS_WHATSAPP_MESSAGE_ID:}
+  whatsapp-phone-number-id: ${FAST2SMS_WHATSAPP_PHONE_NUMBER_ID:}
+
+msg91:
+  auth-key: ${MSG91_AUTH_KEY:}
+  template-id: ${MSG91_TEMPLATE_ID:}
+
+sms:
+  gateway-url: ${SMS_GATEWAY_URL:}
+  api-key: ${SMS_API_KEY:}
 
 logging:
   level:

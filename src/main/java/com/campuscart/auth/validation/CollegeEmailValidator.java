@@ -29,6 +29,11 @@ public class CollegeEmailValidator {
         if (!college.isActive() || !college.getCity().isActive()) {
             throw new BusinessRuleException("The selected city or college is inactive.");
         }
+
+        if (!domainRepository.existsByCollegeId(college.getId())) {
+            throw new BusinessRuleException("Official email verification for this college is not configured yet. Please try again later.");
+        }
+
         String domain = ContactNormalizer.emailDomain(email);
         CollegeEmailDomain configured = domain == null
                 ? null

@@ -221,7 +221,7 @@ class ReviewIntegrationTest extends AbstractMySqlIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(new CreateProductRequest(category.getId(),
                                 title + UUID.randomUUID(), "Review test product", new BigDecimal("20.00"),
-                                ProductType.NEW, SellingReach.PUBLIC, 2))))
+                                ProductType.NEW, SellingReach.OUTSIDE_CAMPUS, 2))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
         return response.get("data").get("id").asText();

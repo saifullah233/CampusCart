@@ -1,0 +1,628 @@
+/* ═══════════════════════════════════════════
+   AccountType Page — Scoped Styles
+   All classes prefixed "at-" to avoid
+   collision with index.css globals.
+   ═══════════════════════════════════════════ */
+
+/* ─── Page Shell ─── */
+.at-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background: #f8fafc;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #334155;
+  color-scheme: light;
+}
+
+/* Force specific styling inside this page */
+.at-page h1,
+.at-page h2,
+.at-page h3 {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  letter-spacing: normal;
+  margin: 0;
+}
+
+/* ─── Header ─── */
+.at-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 48px;
+  background: #fff;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.at-header__left {
+  display: flex;
+  align-items: center;
+}
+
+/* CampusCart logo asset slot */
+.at-logo-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.at-logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.at-logo-wordmark {
+  font-size: 24px;
+  font-weight: 600;
+  color: #2563eb;
+  letter-spacing: -0.5px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.at-logo-wordmark--bold {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* Right header cluster */
+.at-header__right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.at-slogan {
+  font-size: 13px;
+  font-weight: 500;
+  font-style: italic;
+  color: #475569;
+  text-align: right;
+  line-height: 1.35;
+}
+
+.at-slogan--highlight {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.at-header-divider {
+  width: 1px;
+  height: 36px;
+  background: #e2e8f0;
+}
+
+/* CS logo asset slot */
+.at-cs-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.at-cs-logo {
+  height: 38px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ─── Main Layout ─── */
+.at-main {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  flex: 1;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ─── Left Panel ─── */
+.at-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 60px 80px 0 80px;
+  background: transparent;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+/* Seamless curved divider background */
+.at-left::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: -80px;
+  bottom: 0;
+  background: linear-gradient(160deg, #ffffff 0%, #edf4ff 60%, #e2ebfe 100%);
+  border-radius: 0 100px 140px 0 / 0 50% 50% 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.at-left__content {
+  position: relative;
+  z-index: 2;
+  max-width: 440px;
+  width: 100%;
+  margin: auto 0;
+  align-self: center;
+}
+
+.at-welcome {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+}
+
+.at-welcome--brand {
+  color: #2563eb;
+}
+
+.at-tagline {
+  font-size: 16px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0 0 44px 0;
+}
+
+/* Feature list */
+.at-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.at-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.at-feature__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.at-feature__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 0 0 4px 0;
+}
+
+.at-feature__desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+  max-width: 320px;
+}
+
+/* Campus illustration */
+.at-illustration {
+  margin-top: auto;
+  width: 100%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  padding-bottom: 10px;
+}
+
+.at-illustration__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 140px;
+}
+
+/* ─── Right Panel ─── */
+.at-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 56px;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.at-mobile-welcome {
+  display: none;
+}
+
+/* ─── Selection Cards ─── */
+.at-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+  max-width: 470px;
+}
+
+.at-card {
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  padding: 24px 28px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.at-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
+}
+
+/* Curved light blue accent on the right side of the card */
+.at-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 130px;
+  background: #f0f6ff;
+  clip-path: ellipse(95px 140px at 120px 50%);
+  z-index: 1;
+  pointer-events: none;
+  transition: background-color 0.2s ease;
+}
+
+.at-card:hover::after {
+  background: #e2eeff;
+}
+
+.at-card__icon,
+.at-card__body,
+.at-card__arrow {
+  position: relative;
+  z-index: 2;
+}
+
+.at-card__icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eff6ff 60%, #dbeafe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.at-card__body {
+  flex: 1;
+  padding: 0 20px;
+}
+
+.at-card__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.at-card__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+
+.at-card__desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+}
+
+.at-card__arrow {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.at-card:hover .at-card__arrow {
+  transform: scale(1.08);
+}
+
+/* ─── Trust / Security Banner ─── */
+.at-trust {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 36px;
+  max-width: 470px;
+  padding: 12px 24px;
+  background: #eff6ff;
+  border-radius: 14px;
+  border: 1px solid #dbeafe;
+}
+
+.at-trust__shield {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+}
+
+.at-trust__text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1e293b;
+  margin: 0;
+}
+
+.at-trust__link {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+/* ─── Footer ─── */
+.at-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 48px;
+  background: #fff;
+  border-top: 1px solid #f1f5f9;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.at-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.at-footer__link {
+  font-size: 13px;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.at-footer__link:hover {
+  color: #2563eb;
+}
+
+.at-footer__dot {
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.at-footer__copy {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+
+/* ═══════════════════════════════════════════
+   Desktop Constraints (viewport fit)
+   ═══════════════════════════════════════════ */
+@media (min-width: 769px) {
+  .at-page {
+    height: 100vh;
+    overflow: hidden;
+  }
+  .at-main {
+    height: calc(100vh - 140px);
+    overflow: hidden;
+  }
+}
+
+
+/* ═══════════════════════════════════════════
+   Responsive — Mobile / Tablet (≤ 768px)
+   ═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .at-header {
+    padding: 12px 16px;
+  }
+
+  .at-logo-slot {
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .at-logo-img {
+    height: 24px;
+  }
+
+  .at-logo-wordmark {
+    font-size: 13px;
+    line-height: 1.1;
+  }
+
+  .at-header__right {
+    gap: 10px;
+  }
+
+  .at-slogan {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .at-header-divider {
+    height: 24px;
+  }
+
+  .at-cs-logo {
+    height: 28px;
+  }
+
+  /* Switch to single column */
+  .at-main {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    background: #f8fafc;
+  }
+
+  /* Hide left panel entirely */
+  .at-left {
+    display: none;
+  }
+
+  /* Show mobile welcome */
+  .at-mobile-welcome {
+    display: block;
+    width: 100%;
+    max-width: 470px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+
+  .at-welcome--mobile {
+    font-size: 28px;
+    text-align: center;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .at-tagline--mobile {
+    font-size: 14px;
+    text-align: center;
+    margin-top: 6px;
+    margin-bottom: 0;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .at-right {
+    padding: 32px 16px 40px;
+    background: #f8fafc;
+    z-index: auto;
+  }
+
+  .at-cards {
+    max-width: 100%;
+  }
+
+  .at-card {
+    padding: 20px 24px;
+    border-radius: 16px;
+  }
+
+  .at-card__icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .at-card__icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .at-card__title {
+    font-size: 18px;
+  }
+
+  .at-card__desc {
+    font-size: 12px;
+  }
+
+  .at-card__arrow {
+    width: 36px;
+    height: 36px;
+  }
+
+  .at-trust {
+    justify-content: flex-start;
+    align-items: center;
+    margin-top: 32px;
+    padding: 12px 16px;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .at-trust__shield {
+    width: 28px;
+    height: 28px;
+  }
+
+  .at-trust__text {
+    font-size: 12px;
+  }
+
+  .at-footer {
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px 16px;
+    text-align: center;
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .at-footer__links {
+    justify-content: center;
+  }
+
+  .at-footer__copy {
+    line-height: 1.5;
+  }
+}
+
+.at-login-prompt {
+  margin-top: 24px;
+  font-size: 13.5px;
+  color: #64748b;
+  text-align: center;
+}
+
+.at-login-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 4px;
+}
+
+.at-login-link:hover {
+  text-decoration: underline;
+}
+

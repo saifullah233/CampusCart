@@ -71,6 +71,10 @@ public class SecurityConfig {
                                 "/ws",
                                 "/api/v1/auth/**",
                                 "/api/v1/otp/**",
+                                "/api/v1/cities",
+                                "/api/v1/cities/**",
+                                "/api/v1/colleges",
+                                "/api/v1/colleges/**",
                                 "/error")
                         .permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")

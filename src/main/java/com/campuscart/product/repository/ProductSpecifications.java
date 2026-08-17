@@ -28,7 +28,6 @@ public final class ProductSpecifications {
             Join<Product, com.campuscart.college.domain.College> college = root.join("college", JoinType.LEFT);
             Join<Product, com.campuscart.location.domain.City> city = root.join("city");
 
-            Predicate ownership = cb.equal(seller.get("id"), viewer.getId());
             Predicate statusAllowed = cb.equal(root.get("status"), ProductStatus.ACTIVE);
             if (requestedStatus != null) {
                 statusAllowed = cb.and(statusAllowed, cb.equal(root.get("status"), requestedStatus));
@@ -39,10 +38,7 @@ public final class ProductSpecifications {
             }
 
             Predicate discovery = discoveryPredicate(viewer, scope, root, seller, college, city, cb);
-            Predicate visible = cb.or(ownership, cb.and(statusAllowed, discovery));
-            if (requestedStatus != null) {
-                visible = cb.and(visible, cb.equal(root.get("status"), requestedStatus));
-            }
+            Predicate visible = cb.and(statusAllowed, discovery);
             return visible;
         };
     }
@@ -53,27 +49,29 @@ public final class ProductSpecifications {
                                                 Join<Product, com.campuscart.college.domain.College> college,
                                                 Join<Product, com.campuscart.location.domain.City> city,
                                                 jakarta.persistence.criteria.CriteriaBuilder cb) {
-        Predicate publicReach = cb.equal(root.get("sellingReach"), SellingReach.PUBLIC);
-        Predicate otherCollegeReach = cb.and(
-                cb.equal(root.get("sellingReach"), SellingReach.OTHER_COLLEGES),
-                cb.equal(city.get("id"), viewer.getCity().getId()));
-        Predicate campusReach = viewer.getCollege() == null
+        Predicate outsideCampusReach = cb.equal(root.get("sellingReach"), SellingReach.OUTSIDE_CAMPUS);
+        Predicate campusReach = (viewer.getAccountType() == UserType.COMMUNITY || viewer.getCollege() == null)
                 ? cb.disjunction()
                 : cb.and(
-                        cb.equal(root.get("sellingReach"), SellingReach.MY_CAMPUS),
+                        cb.equal(root.get("sellingReach"), SellingReach.CAMPUS_ONLY),
                         cb.equal(college.get("id"), viewer.getCollege().getId()));
 
+        if (scope == null) {
+            scope = MarketplaceScope.ALL_PRODUCTS;
+        }
+
         return switch (scope) {
-            case MY_COLLEGE -> viewer.getCollege() == null
+            case MY_COLLEGE -> (viewer.getCollege() == null)
                     ? cb.disjunction()
                     : cb.and(cb.equal(college.get("id"), viewer.getCollege().getId()),
-                    cb.or(cb.equal(root.get("sellingReach"), SellingReach.MY_CAMPUS),
-                            cb.equal(root.get("sellingReach"), SellingReach.OTHER_COLLEGES), publicReach));
-            case NEARBY_COLLEGES -> cb.and(cb.equal(city.get("id"), viewer.getCity().getId()),
-                    cb.or(cb.equal(root.get("sellingReach"), SellingReach.OTHER_COLLEGES), publicReach));
-            case COMMUNITY_MARKETPLACE -> cb.and(cb.equal(seller.get("accountType"), UserType.COMMUNITY),
-                    cb.or(publicReach, otherCollegeReach));
-            case ALL_PRODUCTS -> cb.or(publicReach, otherCollegeReach, campusReach);
+                            cb.or(campusReach, outsideCampusReach));
+            case NEARBY_COLLEGES -> cb.and(
+                    cb.equal(city.get("id"), viewer.getCity().getId()),
+                    outsideCampusReach);
+            case COMMUNITY_MARKETPLACE -> cb.and(
+                    cb.equal(seller.get("accountType"), UserType.COMMUNITY),
+                    outsideCampusReach);
+            case ALL_PRODUCTS -> cb.or(outsideCampusReach, campusReach);
         };
     }
 

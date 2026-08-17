@@ -113,12 +113,14 @@ public class NotificationService {
     }
 
     private boolean canDiscover(Product product, User viewer) {
-        boolean sameCity = product.getCity().getId().equals(viewer.getCity().getId());
-        boolean sameCollege = viewer.getCollege() != null && product.getCollege() != null
-                && viewer.getCollege().getId().equals(product.getCollege().getId());
-        return product.getSellingReach() == SellingReach.PUBLIC
-                || (sameCity && product.getSellingReach() == SellingReach.OTHER_COLLEGES)
-                || (sameCollege && product.getSellingReach() == SellingReach.MY_CAMPUS);
+        if (product.getSellingReach() == SellingReach.CAMPUS_ONLY) {
+            if (viewer.getAccountType() == com.campuscart.user.domain.UserType.COMMUNITY || viewer.getCollege() == null) {
+                return false;
+            }
+            return product.getCollege() != null && viewer.getCollege() != null
+                    && viewer.getCollege().getId().equals(product.getCollege().getId());
+        }
+        return product.getSellingReach() == SellingReach.OUTSIDE_CAMPUS;
     }
 
     private void publishAfterCommit(String username, NotificationResponse response) {

@@ -3,6 +3,8 @@ package com.campuscart.auth.service;
 import com.campuscart.auth.dto.AuthTokenResponse;
 import com.campuscart.auth.dto.CommunityRegistrationRequest;
 import com.campuscart.auth.dto.LoginRequest;
+import com.campuscart.auth.dto.LoginResponse;
+import com.campuscart.user.domain.AccountStatus;
 import com.campuscart.auth.dto.RegistrationResponse;
 import com.campuscart.auth.dto.StudentRegistrationRequest;
 import com.campuscart.auth.dto.VerificationResponse;
@@ -72,11 +74,22 @@ public class AuthService {
         College college = collegeEmailValidator.validate(request.cityId(), request.collegeId(), email);
         otpService.ensureCanIssue(email);
 
-        User user = new User(email, request.fullName().trim(), college);
+        String phone = null;
+        if (request.phoneNumber() != null && !request.phoneNumber().isBlank()) {
+            phone = normalizePhone(request.phoneNumber());
+            if (userRepository.existsByPhoneNumber(phone)) {
+                throw new DuplicateResourceException("An account with this phone number already exists.");
+            }
+        }
+
+        User user = phone != null
+                ? User.student(email, request.fullName().trim(), college, phone)
+                : new User(email, request.fullName().trim(), college);
         user.changePasswordHash(passwordEncoder.encode(request.password()));
         userRepository.saveAndFlush(user);
-        OtpChallengeResponse otp = otpService.issue(user, OtpChannel.EMAIL, email);
-        return new RegistrationResponse(user.getId(), user.getStatus().name(), otp);
+
+        OtpChallengeResponse emailOtp = otpService.issue(user, OtpChannel.EMAIL, email);
+        return new RegistrationResponse(user.getId(), user.getStatus().name(), emailOtp);
     }
 
     @Transactional
@@ -89,23 +102,25 @@ public class AuthService {
         }
         City city = cityRepository.findByIdAndActiveTrue(request.cityId())
                 .orElseThrow(() -> ResourceNotFoundException.of("City", request.cityId()));
-        otpService.ensureCanIssue(phone);
+        otpService.ensureCanIssue(email);
 
         User user = User.community(email, request.fullName().trim(), city, phone);
         user.changePasswordHash(passwordEncoder.encode(request.password()));
         userRepository.saveAndFlush(user);
-        OtpChallengeResponse otp = otpService.issue(user, OtpChannel.PHONE, phone);
-        return new RegistrationResponse(user.getId(), user.getStatus().name(), otp);
+
+        OtpChallengeResponse emailOtp = otpService.issue(user, OtpChannel.EMAIL, email);
+        return new RegistrationResponse(user.getId(), user.getStatus().name(), emailOtp);
     }
 
     @Transactional
     public VerificationResponse verifyRegistration(UUID challengeId, String code) {
         User user = otpService.verify(challengeId, code);
-        return new VerificationResponse(issueTokens(user), userMapper.toProfile(user));
+        AuthTokenResponse tokens = user.getStatus().canAuthenticate() ? issueTokens(user) : null;
+        return new VerificationResponse(tokens, userMapper.toProfile(user));
     }
 
     @Transactional
-    public AuthTokenResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         String email = ContactNormalizer.email(request.email());
         loginRateLimitService.ensureAllowed(email);
         User user = userRepository.findByEmail(email).orElseThrow(() -> {
@@ -117,12 +132,34 @@ public class AuthService {
             loginRateLimitService.recordFailure(email);
             throw new InvalidCredentialsException();
         }
-        if (!user.getStatus().canAuthenticate()) {
-            loginRateLimitService.recordSuccess(email);
-            throw new AccountNotActiveException();
+        if (request.accountType() != null && user.getAccountType() != request.accountType()) {
+            loginRateLimitService.recordFailure(email);
+            throw new InvalidCredentialsException();
         }
         loginRateLimitService.recordSuccess(email);
-        return issueTokens(user);
+
+        if (user.getStatus() == AccountStatus.SUSPENDED) {
+            throw new AccountNotActiveException();
+        }
+
+        if (user.getStatus() == AccountStatus.PENDING_VERIFICATION) {
+            OtpChallengeResponse emailOtp = !user.isEmailVerified()
+                    ? otpService.issueOrRenew(user, OtpChannel.EMAIL, user.getEmail())
+                    : null;
+
+            return LoginResponse.pendingVerification(
+                    user.getId(),
+                    user.getAccountType().name(),
+                    user.isEmailVerified(),
+                    emailOtp
+            );
+        }
+
+        if (!user.getStatus().canAuthenticate()) {
+            throw new AccountNotActiveException();
+        }
+
+        return LoginResponse.active(issueTokens(user));
     }
 
     @Transactional

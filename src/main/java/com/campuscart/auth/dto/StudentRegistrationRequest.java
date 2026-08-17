@@ -12,5 +12,10 @@ public record StudentRegistrationRequest(
         @NotNull UUID collegeId,
         @NotBlank @Email @Size(max = 255) String officialEmail,
         @NotBlank @Size(max = 150) String fullName,
+        @Size(max = 32) String phoneNumber,
         @NotBlank @Size(min = 8, max = 72) String password) {
+
+    public StudentRegistrationRequest(UUID cityId, UUID collegeId, String officialEmail, String fullName, String password) {
+        this(cityId, collegeId, officialEmail, fullName, null, password);
+    }
 }

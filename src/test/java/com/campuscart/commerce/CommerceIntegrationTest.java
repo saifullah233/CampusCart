@@ -193,7 +193,7 @@ class CommerceIntegrationTest extends AbstractMySqlIntegrationTest {
 
     private String createProduct(String title, ProductType type, int quantity) throws Exception {
         CreateProductRequest request = new CreateProductRequest(category.getId(), title + UUID.randomUUID(),
-                "Commerce test product", new BigDecimal("12.50"), type, SellingReach.PUBLIC, quantity);
+                "Commerce test product", new BigDecimal("12.50"), type, SellingReach.OUTSIDE_CAMPUS, quantity);
         JsonNode response = json(mockMvc.perform(post("/api/v1/products")
                         .header("Authorization", bearer(sellerToken))
                         .contentType(MediaType.APPLICATION_JSON)

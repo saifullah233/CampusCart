@@ -212,7 +212,7 @@ class AdminPart8IntegrationTest extends AbstractMySqlIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(new CreateProductRequest(category.getId(),
                                 "Moderated product-" + UUID.randomUUID(), "Product for admin moderation",
-                                new BigDecimal("12.00"), ProductType.NEW, SellingReach.PUBLIC, 2))))
+                                new BigDecimal("12.00"), ProductType.NEW, SellingReach.OUTSIDE_CAMPUS, 2))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
         return response.get("data").get("id").asText();

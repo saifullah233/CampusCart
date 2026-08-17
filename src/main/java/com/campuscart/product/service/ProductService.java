@@ -220,32 +220,40 @@ public class ProductService {
     }
 
     private void validateReach(User seller, SellingReach reach) {
-        if (reach == SellingReach.MY_CAMPUS && seller.getCollege() == null) {
-            throw new BusinessRuleException("Community sellers cannot use MY_CAMPUS reach.");
+        if (reach == SellingReach.CAMPUS_ONLY && (seller.getAccountType() == com.campuscart.user.domain.UserType.COMMUNITY || seller.getCollege() == null)) {
+            throw new BusinessRuleException("Community sellers cannot create CAMPUS_ONLY listings.");
         }
     }
 
     private boolean canDiscover(Product product, User viewer, MarketplaceScope scope) {
-        if (viewer.getRole().isAdmin() || product.getSeller().getId().equals(viewer.getId())) {
+        if (viewer.getRole().isAdmin()) {
             return true;
         }
         if (product.getStatus() != ProductStatus.ACTIVE) {
-            return false;
+            return product.getSeller().getId().equals(viewer.getId());
         }
-        boolean sameCity = product.getCity().getId().equals(viewer.getCity().getId());
-        boolean sameCollege = viewer.getCollege() != null && product.getCollege() != null
-                && product.getCollege().getId().equals(viewer.getCollege().getId());
-        return switch (scope) {
-            case MY_COLLEGE -> sameCollege;
-            case NEARBY_COLLEGES -> sameCity && (product.getSellingReach() == SellingReach.OTHER_COLLEGES
-                    || product.getSellingReach() == SellingReach.PUBLIC);
-            case COMMUNITY_MARKETPLACE -> product.getSeller().getAccountType() == com.campuscart.user.domain.UserType.COMMUNITY
-                    && (product.getSellingReach() == SellingReach.PUBLIC
-                    || (sameCity && product.getSellingReach() == SellingReach.OTHER_COLLEGES));
-            case ALL_PRODUCTS -> product.getSellingReach() == SellingReach.PUBLIC
-                    || (sameCity && product.getSellingReach() == SellingReach.OTHER_COLLEGES)
-                    || (sameCollege && product.getSellingReach() == SellingReach.MY_CAMPUS);
-        };
+
+        if (product.getSellingReach() == SellingReach.CAMPUS_ONLY) {
+            if (viewer.getAccountType() == com.campuscart.user.domain.UserType.COMMUNITY || viewer.getCollege() == null) {
+                return false;
+            }
+            return product.getCollege() != null && product.getCollege().getId().equals(viewer.getCollege().getId());
+        }
+
+        if (product.getSellingReach() == SellingReach.OUTSIDE_CAMPUS) {
+            if (scope == null) {
+                scope = MarketplaceScope.ALL_PRODUCTS;
+            }
+            return switch (scope) {
+                case MY_COLLEGE -> viewer.getCollege() != null && product.getCollege() != null
+                        && product.getCollege().getId().equals(viewer.getCollege().getId());
+                case NEARBY_COLLEGES -> product.getCity().getId().equals(viewer.getCity().getId());
+                case COMMUNITY_MARKETPLACE -> product.getSeller().getAccountType() == com.campuscart.user.domain.UserType.COMMUNITY;
+                case ALL_PRODUCTS -> true;
+            };
+        }
+
+        return false;
     }
 
     private void validateQuery(ProductSearchQuery query) {

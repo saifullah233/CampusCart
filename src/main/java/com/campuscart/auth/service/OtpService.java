@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 /** Creates, delivers, rate-limits, and verifies one-time registration challenges. */
@@ -81,6 +82,24 @@ public class OtpService {
         return OtpChallengeResponse.from(challenge, destination);
     }
 
+    /**
+     * Issues a fresh challenge or safely reuses an active challenge during cooldown to prevent spam.
+     */
+    @Transactional
+    public OtpChallengeResponse issueOrRenew(User user, OtpChannel channel, String destination) {
+        Instant now = clock.instant();
+        Optional<OtpChallenge> activeOpt = challengeRepository.findActiveUnverifiedChallenge(user.getId(), channel, now);
+        if (activeOpt.isPresent()) {
+            OtpChallenge active = activeOpt.get();
+            if (active.getNextResendAt().isAfter(now) && active.getAttemptCount() < properties.getMaxAttempts()) {
+                return OtpChallengeResponse.from(active, destination);
+            }
+            active.markSuperseded(now);
+            challengeRepository.saveAndFlush(active);
+        }
+        return issue(user, channel, destination);
+    }
+
     @Transactional(noRollbackFor = {
             OtpInvalidException.class,
             OtpAttemptsExceededException.class,
@@ -114,10 +133,10 @@ public class OtpService {
         }
 
         User user = challenge.getUser();
-        if (user.getAccountType() == UserType.STUDENT && challenge.getChannel() == OtpChannel.EMAIL) {
-            user.activateAfterEmailVerification();
-        } else if (user.getAccountType() == UserType.COMMUNITY && challenge.getChannel() == OtpChannel.PHONE) {
-            user.activateAfterPhoneVerification();
+        if (challenge.getChannel() == OtpChannel.EMAIL) {
+            user.markEmailVerified();
+        } else if (challenge.getChannel() == OtpChannel.PHONE) {
+            user.markPhoneVerified();
         } else {
             throw new BusinessRuleException("This verification channel is not valid for the account.");
         }

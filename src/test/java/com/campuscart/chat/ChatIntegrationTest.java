@@ -219,7 +219,7 @@ class ChatIntegrationTest extends AbstractMySqlIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(new CreateProductRequest(category.getId(),
                                 "Chat product " + UUID.randomUUID(), "Product used in chat tests",
-                                new BigDecimal("20.00"), ProductType.NEW, SellingReach.PUBLIC, 1))))
+                                new BigDecimal("20.00"), ProductType.NEW, SellingReach.OUTSIDE_CAMPUS, 1))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString());
         return response.get("data").get("id").asText();

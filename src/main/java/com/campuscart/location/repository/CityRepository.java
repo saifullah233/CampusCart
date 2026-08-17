@@ -8,6 +8,8 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface CityRepository extends JpaRepository<City, UUID> {
 
     Optional<City> findByIdAndActiveTrue(UUID id);
@@ -17,4 +19,7 @@ public interface CityRepository extends JpaRepository<City, UUID> {
     boolean existsByNameIgnoreCaseAndStateIgnoreCaseAndIdNot(String name, String state, UUID id);
 
     Page<City> findAllByOrderByNameAsc(Pageable pageable);
+
+    List<City> findAllByActiveTrueOrderByNameAsc();
 }
+

@@ -11,6 +11,7 @@ import com.campuscart.user.domain.User;
 import com.campuscart.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -80,7 +81,7 @@ class SchemaAndPersistenceIntegrationTest extends AbstractMySqlIntegrationTest {
     @Test
     @Transactional
     void persistsCategoryWithAuditing() {
-        Category category = new Category("Books", "books");
+        Category category = new Category("Test Category " + UUID.randomUUID(), "test-category-" + UUID.randomUUID());
         entityManager.persist(category);
         entityManager.flush();
 
