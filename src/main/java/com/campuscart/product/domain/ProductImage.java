@@ -33,17 +33,30 @@ public class ProductImage extends BaseEntity {
     @Column(name = "size_bytes", nullable = false)
     private long sizeBytes;
 
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder = 0;
+
+    @Column(name = "is_cover", nullable = false)
+    private boolean isCover = false;
+
     protected ProductImage() {
         // Required by JPA.
     }
 
     public ProductImage(Product product, String storageKey, String deliveryUrl,
                         String contentType, long sizeBytes) {
+        this(product, storageKey, deliveryUrl, contentType, sizeBytes, 0, false);
+    }
+
+    public ProductImage(Product product, String storageKey, String deliveryUrl,
+                        String contentType, long sizeBytes, int displayOrder, boolean isCover) {
         this.product = product;
         this.storageKey = storageKey;
         this.deliveryUrl = deliveryUrl;
         this.contentType = contentType;
         this.sizeBytes = sizeBytes;
+        this.displayOrder = displayOrder;
+        this.isCover = isCover;
     }
 
     public Product getProduct() { return product; }
@@ -51,4 +64,6 @@ public class ProductImage extends BaseEntity {
     public String getDeliveryUrl() { return deliveryUrl; }
     public String getContentType() { return contentType; }
     public long getSizeBytes() { return sizeBytes; }
+    public int getDisplayOrder() { return displayOrder; }
+    public boolean isCover() { return isCover; }
 }

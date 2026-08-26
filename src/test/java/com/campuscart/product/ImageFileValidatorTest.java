@@ -52,4 +52,27 @@ class ImageFileValidatorTest {
         assertThatThrownBy(() -> validator.validate(truncated))
                 .isInstanceOf(InvalidImageException.class);
     }
+
+    @Test
+    void acceptsStructurallyValidJpeg() throws Exception {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, "jpg", baos);
+        byte[] jpegBytes = baos.toByteArray();
+
+        ImageFileValidator.ValidatedImage image = validator.validate(
+                new MockMultipartFile("file", "image.jpg", "image/jpeg", jpegBytes));
+
+        assertThat(image.contentType()).isEqualTo("image/jpeg");
+        assertThat(image.sizeBytes()).isEqualTo(jpegBytes.length);
+    }
+
+    @Test
+    void rejectsUnsupportedMimeType() {
+        MockMultipartFile gif = new MockMultipartFile("file", "image.gif", "image/gif",
+                new byte[]{'G', 'I', 'F', '8', '9', 'a'});
+
+        assertThatThrownBy(() -> validator.validate(gif))
+                .isInstanceOf(InvalidImageException.class);
+    }
 }

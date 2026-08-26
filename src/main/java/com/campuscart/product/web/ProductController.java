@@ -45,12 +45,28 @@ public class ProductController {
         this.imageService = imageService;
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<ProductResponse>> create(
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse<ProductResponse>> createJson(
             @AuthenticationPrincipal AuthenticatedUser principal,
             @Valid @RequestBody CreateProductRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.ok("Product created.", productService.create(principal.id(), request)));
+                .body(ApiResponse.ok("Product created.", productService.create(principal.id(), request, null)));
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<ProductResponse>> createMultipart(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestParam("title") String title,
+            @RequestParam("categoryId") UUID categoryId,
+            @RequestParam("description") String description,
+            @RequestParam("price") BigDecimal price,
+            @RequestParam("productType") ProductType productType,
+            @RequestParam("sellingReach") SellingReach sellingReach,
+            @RequestParam(value = "quantity", required = false, defaultValue = "1") Integer quantity,
+            @RequestParam(value = "images", required = false) java.util.List<MultipartFile> images) {
+        CreateProductRequest request = new CreateProductRequest(categoryId, title, description, price, productType, sellingReach, quantity);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Product created.", productService.create(principal.id(), request, images)));
     }
 
     @GetMapping

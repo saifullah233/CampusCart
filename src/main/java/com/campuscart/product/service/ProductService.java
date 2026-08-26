@@ -41,30 +41,82 @@ public class ProductService {
     private final UserRepository userRepository;
     private final ProductMapper productMapper;
     private final com.campuscart.product.repository.ProductImageRepository productImageRepository;
+    private final com.campuscart.product.image.ProductImageStorage imageStorage;
+    private final com.campuscart.product.image.ImageFileValidator imageFileValidator;
     private final NotificationService notificationService;
 
     public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository,
                           UserRepository userRepository, ProductMapper productMapper,
                           com.campuscart.product.repository.ProductImageRepository productImageRepository,
+                          com.campuscart.product.image.ProductImageStorage imageStorage,
+                          com.campuscart.product.image.ImageFileValidator imageFileValidator,
                           NotificationService notificationService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.productMapper = productMapper;
         this.productImageRepository = productImageRepository;
+        this.imageStorage = imageStorage;
+        this.imageFileValidator = imageFileValidator;
         this.notificationService = notificationService;
     }
 
     @Transactional
     public ProductResponse create(UUID principalId, CreateProductRequest request) {
+        return create(principalId, request, null);
+    }
+
+    @Transactional
+    public ProductResponse create(UUID principalId, CreateProductRequest request, java.util.List<org.springframework.web.multipart.MultipartFile> images) {
         User seller = requireActiveUser(principalId);
         Category category = requireCategory(request.categoryId());
         int quantity = request.quantity() == null ? 1 : request.quantity();
         validateReach(seller, request.sellingReach());
+
+        java.util.List<org.springframework.web.multipart.MultipartFile> validFiles = images == null ? java.util.List.of() : images.stream()
+                .filter(f -> f != null && !f.isEmpty())
+                .toList();
+
+        if (validFiles.size() > ProductImageService.MAX_IMAGES) {
+            throw new com.campuscart.common.exception.ImageLimitExceededException("You can add up to 5 photos.");
+        }
+
+        java.util.List<com.campuscart.product.image.ImageFileValidator.ValidatedImage> validatedImages = new java.util.ArrayList<>();
+        for (org.springframework.web.multipart.MultipartFile file : validFiles) {
+            validatedImages.add(imageFileValidator.validate(file));
+        }
+
         Product product = new Product(seller, seller.getCollege(), seller.getCity(), category,
                 request.title().trim(), request.description().trim(), request.price(),
                 request.productType(), request.sellingReach(), quantity);
         Product saved = productRepository.save(product);
+
+        if (!validFiles.isEmpty()) {
+            java.util.List<String> uploadedKeys = new java.util.ArrayList<>();
+            try {
+                for (int i = 0; i < validFiles.size(); i++) {
+                    org.springframework.web.multipart.MultipartFile file = validFiles.get(i);
+                    com.campuscart.product.image.ImageFileValidator.ValidatedImage validated = validatedImages.get(i);
+                    com.campuscart.product.image.ProductImageStorage.StoredImage stored = imageStorage.store(saved.getId(), file);
+                    uploadedKeys.add(stored.storageKey());
+                    boolean isCover = (i == 0);
+                    int displayOrder = i;
+                    com.campuscart.product.domain.ProductImage productImage = new com.campuscart.product.domain.ProductImage(
+                            saved, stored.storageKey(), stored.deliveryUrl(), validated.contentType(),
+                            validated.sizeBytes(), displayOrder, isCover);
+                    productImageRepository.save(productImage);
+                }
+            } catch (Exception ex) {
+                for (String key : uploadedKeys) {
+                    try {
+                        imageStorage.delete(key);
+                    } catch (Exception ignored) {
+                    }
+                }
+                throw ex;
+            }
+        }
+
         notificationService.notifyNewProduct(saved);
         return productMapper.toResponse(saved);
     }

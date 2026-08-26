@@ -20,9 +20,8 @@ public class ProductMapper {
     }
 
     public ProductResponse toResponse(Product product) {
-        List<ProductImageResponse> images = imageRepository.findByProductIdOrderByCreatedAtAsc(product.getId()).stream()
-                .map(image -> new ProductImageResponse(image.getId(), image.getDeliveryUrl(),
-                        image.getContentType(), image.getSizeBytes(), image.getCreatedAt()))
+        List<ProductImageResponse> images = imageRepository.findByProductIdOrderByDisplayOrderAscCreatedAtAsc(product.getId()).stream()
+                .map(this::toImageResponse)
                 .toList();
         return new ProductResponse(
                 product.getId(),
@@ -48,12 +47,11 @@ public class ProductMapper {
                 product.getVersion());
     }
 
-            public ProductResponse toResponse(Product product, List<ProductImage> preloadedImages) {
-            List<ProductImageResponse> images = preloadedImages.stream()
-                .map(image -> new ProductImageResponse(image.getId(), image.getDeliveryUrl(),
-                    image.getContentType(), image.getSizeBytes(), image.getCreatedAt()))
+    public ProductResponse toResponse(Product product, List<ProductImage> preloadedImages) {
+        List<ProductImageResponse> images = preloadedImages.stream()
+                .map(this::toImageResponse)
                 .toList();
-            return new ProductResponse(
+        return new ProductResponse(
                 product.getId(),
                 product.getSeller().getId(),
                 product.getSeller().getFullName(),
@@ -75,5 +73,18 @@ public class ProductMapper {
                 product.getCreatedAt(),
                 product.getUpdatedAt(),
                 product.getVersion());
-            }
+    }
+
+    private ProductImageResponse toImageResponse(ProductImage image) {
+        return new ProductImageResponse(
+                image.getId(),
+                image.getDeliveryUrl(),
+                image.getDeliveryUrl(),
+                image.getStorageKey(),
+                image.getContentType(),
+                image.getSizeBytes(),
+                image.getDisplayOrder(),
+                image.isCover(),
+                image.getCreatedAt());
+    }
 }

@@ -60,7 +60,7 @@ class ProductImageServiceTest {
         UUID principalId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         when(productService.requireWritableProduct(principalId, productId)).thenReturn(mock(Product.class));
-        when(imageRepository.countByProductId(productId)).thenReturn(8L);
+        when(imageRepository.countByProductId(productId)).thenReturn(5L);
 
         assertThatThrownBy(() -> imageService.add(principalId, productId,
                 new MockMultipartFile("file", "x.jpg", "image/jpeg",

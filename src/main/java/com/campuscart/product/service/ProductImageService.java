@@ -16,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class ProductImageService {
 
-    private static final int MAX_IMAGES = 8;
+    public static final int MAX_IMAGES = 5;
 
     private final ProductService productService;
     private final ProductImageRepository imageRepository;
@@ -34,13 +34,16 @@ public class ProductImageService {
     @Transactional
     public ProductImageResponse add(UUID principalId, UUID productId, MultipartFile file) {
         Product product = productService.requireWritableProduct(principalId, productId);
-        if (imageRepository.countByProductId(productId) >= MAX_IMAGES) {
+        long currentCount = imageRepository.countByProductId(productId);
+        if (currentCount >= MAX_IMAGES) {
             throw new ImageLimitExceededException();
         }
         ImageFileValidator.ValidatedImage validated = imageFileValidator.validate(file);
         ProductImageStorage.StoredImage stored = imageStorage.store(productId, file);
+        boolean isCover = (currentCount == 0);
+        int displayOrder = (int) currentCount;
         ProductImage image = imageRepository.save(new ProductImage(product, stored.storageKey(),
-                stored.deliveryUrl(), validated.contentType(), validated.sizeBytes()));
+                stored.deliveryUrl(), validated.contentType(), validated.sizeBytes(), displayOrder, isCover));
         return toResponse(image);
     }
 
@@ -54,7 +57,8 @@ public class ProductImageService {
     }
 
     private ProductImageResponse toResponse(ProductImage image) {
-        return new ProductImageResponse(image.getId(), image.getDeliveryUrl(), image.getContentType(),
-                image.getSizeBytes(), image.getCreatedAt());
+        return new ProductImageResponse(image.getId(), image.getDeliveryUrl(), image.getDeliveryUrl(),
+                image.getStorageKey(), image.getContentType(), image.getSizeBytes(),
+                image.getDisplayOrder(), image.isCover(), image.getCreatedAt());
     }
 }

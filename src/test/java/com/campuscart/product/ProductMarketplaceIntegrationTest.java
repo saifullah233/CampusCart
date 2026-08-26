@@ -274,6 +274,146 @@ class ProductMarketplaceIntegrationTest extends AbstractMySqlIntegrationTest {
                 .andExpect(jsonPath("$.data.status").value("DELETED"));
     }
 
+    @Test
+    @Transactional
+    void createListingWithOneImageSuccessfullyMarksCoverAndDisplayOrder() throws Exception {
+        org.springframework.mock.web.MockMultipartFile imageFile = createMockImage("images", "jpeg", "image/jpeg");
+
+        String body = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/products")
+                        .file(imageFile)
+                        .param("title", "Physics Textbook with Cover")
+                        .param("categoryId", category.getId().toString())
+                        .param("description", "Near perfect condition with illustrations.")
+                        .param("price", "450.00")
+                        .param("productType", "PHYSICAL")
+                        .param("sellingReach", "CAMPUS_ONLY")
+                        .param("quantity", "1")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.images.length()").value(1))
+                .andExpect(jsonPath("$.data.images[0].displayOrder").value(0))
+                .andExpect(jsonPath("$.data.images[0].isCover").value(true))
+                .andExpect(jsonPath("$.data.images[0].url").isNotEmpty())
+                .andExpect(jsonPath("$.data.images[0].imageUrl").isNotEmpty())
+                .andReturn().getResponse().getContentAsString();
+
+        JsonNode response = objectMapper.readTree(body);
+        String productId = response.get("data").get("id").asText();
+
+        // Verify retrieval returns image with isCover=true
+        mockMvc.perform(get("/api/v1/products/{id}", productId)
+                        .header("Authorization", "Bearer " + sameCampusStudentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.images.length()").value(1))
+                .andExpect(jsonPath("$.data.images[0].isCover").value(true));
+    }
+
+    @Test
+    @Transactional
+    void createListingWithFiveImagesSuccessfullyStoresAllInOrder() throws Exception {
+        org.springframework.mock.web.MockMultipartFile img1 = createMockImage("images", "jpeg", "image/jpeg");
+        org.springframework.mock.web.MockMultipartFile img2 = createMockImage("images", "png", "image/png");
+        org.springframework.mock.web.MockMultipartFile img3 = createMockImage("images", "jpeg", "image/jpeg");
+        org.springframework.mock.web.MockMultipartFile img4 = createMockImage("images", "png", "image/png");
+        org.springframework.mock.web.MockMultipartFile img5 = createMockImage("images", "jpeg", "image/jpeg");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/products")
+                        .file(img1)
+                        .file(img2)
+                        .file(img3)
+                        .file(img4)
+                        .file(img5)
+                        .param("title", "Engineering Toolkit Complete Set")
+                        .param("categoryId", category.getId().toString())
+                        .param("description", "Complete set with 5 sample photos.")
+                        .param("price", "1200.00")
+                        .param("productType", "PHYSICAL")
+                        .param("sellingReach", "OUTSIDE_CAMPUS")
+                        .param("quantity", "1")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.images.length()").value(5))
+                .andExpect(jsonPath("$.data.images[0].displayOrder").value(0))
+                .andExpect(jsonPath("$.data.images[0].isCover").value(true))
+                .andExpect(jsonPath("$.data.images[1].displayOrder").value(1))
+                .andExpect(jsonPath("$.data.images[1].isCover").value(false))
+                .andExpect(jsonPath("$.data.images[2].displayOrder").value(2))
+                .andExpect(jsonPath("$.data.images[3].displayOrder").value(3))
+                .andExpect(jsonPath("$.data.images[4].displayOrder").value(4))
+                .andExpect(jsonPath("$.data.images[4].isCover").value(false));
+    }
+
+    @Test
+    @Transactional
+    void createListingWithSixImagesIsRejected() throws Exception {
+        org.springframework.mock.web.MockMultipartFile img1 = createMockImage("images", "jpeg", "image/jpeg");
+        org.springframework.mock.web.MockMultipartFile img2 = createMockImage("images", "png", "image/png");
+        org.springframework.mock.web.MockMultipartFile img3 = createMockImage("images", "jpeg", "image/jpeg");
+        org.springframework.mock.web.MockMultipartFile img4 = createMockImage("images", "png", "image/png");
+        org.springframework.mock.web.MockMultipartFile img5 = createMockImage("images", "jpeg", "image/jpeg");
+        org.springframework.mock.web.MockMultipartFile img6 = createMockImage("images", "jpeg", "image/jpeg");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/products")
+                        .file(img1)
+                        .file(img2)
+                        .file(img3)
+                        .file(img4)
+                        .file(img5)
+                        .file(img6)
+                        .param("title", "Too Many Photos")
+                        .param("categoryId", category.getId().toString())
+                        .param("description", "Exceeds 5 photos limit.")
+                        .param("price", "99.00")
+                        .param("productType", "PHYSICAL")
+                        .param("sellingReach", "OUTSIDE_CAMPUS")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.IMAGE_LIMIT_EXCEEDED.name()));
+    }
+
+    @Test
+    @Transactional
+    void createListingWithUnsupportedFileTypeIsRejected() throws Exception {
+        org.springframework.mock.web.MockMultipartFile badFile = new org.springframework.mock.web.MockMultipartFile(
+                "images", "test.pdf", "application/pdf", new byte[]{1, 2, 3, 4, 5});
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/products")
+                        .file(badFile)
+                        .param("title", "Invalid File Item")
+                        .param("categoryId", category.getId().toString())
+                        .param("description", "Attempting pdf upload.")
+                        .param("price", "50.00")
+                        .param("productType", "PHYSICAL")
+                        .param("sellingReach", "OUTSIDE_CAMPUS")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.INVALID_IMAGE.name()));
+    }
+
+    @Test
+    @Transactional
+    void unauthenticatedUserCannotCreateListing() throws Exception {
+        org.springframework.mock.web.MockMultipartFile img = createMockImage("images", "jpeg", "image/jpeg");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/v1/products")
+                        .file(img)
+                        .param("title", "Anonymous Item")
+                        .param("categoryId", category.getId().toString())
+                        .param("description", "No token.")
+                        .param("price", "50.00")
+                        .param("productType", "PHYSICAL")
+                        .param("sellingReach", "OUTSIDE_CAMPUS"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private org.springframework.mock.web.MockMultipartFile createMockImage(String name, String format, String contentType) throws Exception {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(20, 20, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, format, baos);
+        return new org.springframework.mock.web.MockMultipartFile(name, "test." + format, contentType, baos.toByteArray());
+    }
+
     private CreateProductRequest product(String title, ProductType type, SellingReach reach) {
         return new CreateProductRequest(category.getId(), title, "Description", new BigDecimal("12.50"), type, reach, 1);
     }
@@ -286,5 +426,27 @@ class ProductMarketplaceIntegrationTest extends AbstractMySqlIntegrationTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body);
+    }
+
+    @org.springframework.boot.test.context.TestConfiguration
+    static class TestImageConfiguration {
+        @org.springframework.context.annotation.Bean
+        @org.springframework.context.annotation.Primary
+        com.campuscart.product.image.ProductImageStorage testProductImageStorage() {
+            return new com.campuscart.product.image.ProductImageStorage() {
+                @Override
+                public StoredImage store(UUID productId, org.springframework.web.multipart.MultipartFile file) {
+                    String id = UUID.randomUUID().toString();
+                    return new StoredImage("campuscart/products/" + productId + "/" + id,
+                            "https://res.cloudinary.com/demo/image/upload/campuscart/products/" + productId + "/" + id + ".jpg",
+                            file.getContentType(),
+                            file.getSize());
+                }
+
+                @Override
+                public void delete(String storageKey) {
+                }
+            };
+        }
     }
 }

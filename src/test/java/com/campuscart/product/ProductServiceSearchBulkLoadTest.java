@@ -38,6 +38,10 @@ public class ProductServiceSearchBulkLoadTest {
     @Mock
     UserRepository userRepository;
     @Mock
+    com.campuscart.product.image.ProductImageStorage imageStorage;
+    @Mock
+    com.campuscart.product.image.ImageFileValidator imageFileValidator;
+    @Mock
     NotificationService notificationService;
 
     ProductService productService;
@@ -45,7 +49,7 @@ public class ProductServiceSearchBulkLoadTest {
     @BeforeEach
     void setUp() {
         productService = new ProductService(productRepository, categoryRepository, userRepository,
-                productMapper, productImageRepository, notificationService);
+                productMapper, productImageRepository, imageStorage, imageFileValidator, notificationService);
         com.campuscart.user.domain.User user = mock(com.campuscart.user.domain.User.class);
         com.campuscart.user.domain.AccountStatus status = mock(com.campuscart.user.domain.AccountStatus.class);
         // AccountStatus is an enum; mock behaviour by stubbing the user's getStatus to a real ACTIVE value
