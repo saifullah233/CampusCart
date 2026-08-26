@@ -63,7 +63,7 @@ public class ProductController {
             @RequestParam("productType") ProductType productType,
             @RequestParam("sellingReach") SellingReach sellingReach,
             @RequestParam(value = "quantity", required = false, defaultValue = "1") Integer quantity,
-            @RequestParam(value = "images", required = false) java.util.List<MultipartFile> images) {
+            @RequestPart(value = "images", required = false) java.util.List<MultipartFile> images) {
         CreateProductRequest request = new CreateProductRequest(categoryId, title, description, price, productType, sellingReach, quantity);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.ok("Product created.", productService.create(principal.id(), request, images)));
