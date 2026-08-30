@@ -11,6 +11,7 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [cartItemCount, setCartItemCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -38,13 +39,11 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
   }, []);
 
   // Fetch real counts from backend
-  useEffect(() => {
-    let cancelled = false;
-
+  const fetchCounts = () => {
     // Fetch unread notifications count
     api.get('/api/v1/notifications/unread-count')
       .then((res) => {
-        if (!cancelled && res.success && typeof res.data === 'number') {
+        if (res.success && typeof res.data === 'number') {
           setUnreadNotifications(res.data);
         }
       })
@@ -53,13 +52,38 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
     // Fetch cart count
     api.get('/api/v1/cart')
       .then((res) => {
-        if (!cancelled && res.success && res.data?.items) {
+        if (res.success && res.data?.items) {
           setCartItemCount(res.data.items.length);
         }
       })
       .catch(() => {});
 
-    return () => { cancelled = true; };
+    // Fetch wishlist count
+    api.get('/api/v1/wishlist?page=0&size=1')
+      .then((res) => {
+        if (res.success && typeof res.data?.totalElements === 'number') {
+          setWishlistCount(res.data.totalElements);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchCounts();
+
+    const handleCartUpdate = () => fetchCounts();
+    const handleUnreadUpdate = () => fetchCounts();
+    const handleWishlistUpdate = () => fetchCounts();
+
+    window.addEventListener('campuscart-cart-updated', handleCartUpdate);
+    window.addEventListener('campuscart-unread-updated', handleUnreadUpdate);
+    window.addEventListener('campuscart-wishlist-updated', handleWishlistUpdate);
+
+    return () => {
+      window.removeEventListener('campuscart-cart-updated', handleCartUpdate);
+      window.removeEventListener('campuscart-unread-updated', handleUnreadUpdate);
+      window.removeEventListener('campuscart-wishlist-updated', handleWishlistUpdate);
+    };
   }, []);
 
   const handleSearchSubmit = (e) => {
@@ -129,6 +153,14 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
 
       {/* Right Action Icons & Profile */}
       <div className="cc-navbar__right">
+        {/* Wishlist */}
+        <Link to="/marketplace/wishlist" className="cc-navbar__action-btn" aria-label="Wishlist" title="My Wishlist">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          {wishlistCount > 0 && <span className="cc-navbar__badge">{wishlistCount}</span>}
+        </Link>
+
         {/* Cart */}
         <Link to="/cart" className="cc-navbar__action-btn" aria-label="Shopping Cart">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -188,6 +220,30 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
                 <div className="cc-navbar__dropdown-name">{user?.fullName || 'CampusCart User'}</div>
                 <div className="cc-navbar__dropdown-email">{user?.email}</div>
               </div>
+
+              <Link
+                to="/marketplace/wishlist"
+                className="cc-navbar__dropdown-item"
+                onClick={() => setDropdownOpen(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                My Wishlist
+              </Link>
+
+              <Link
+                to="/orders"
+                className="cc-navbar__dropdown-item"
+                onClick={() => setDropdownOpen(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+                My Orders
+              </Link>
 
               <Link
                 to="/profile"

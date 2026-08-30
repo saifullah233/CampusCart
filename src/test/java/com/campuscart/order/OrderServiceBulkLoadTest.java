@@ -17,6 +17,7 @@ import com.campuscart.order.repository.OrderRepository;
 import com.campuscart.order.service.OrderService;
 import com.campuscart.payment.domain.Payment;
 import com.campuscart.payment.repository.PaymentRepository;
+import com.campuscart.product.repository.ProductImageRepository;
 import com.campuscart.product.repository.ProductRepository;
 import com.campuscart.user.domain.User;
 import com.campuscart.user.service.UserService;
@@ -42,6 +43,7 @@ class OrderServiceBulkLoadTest {
 
     @Mock CartItemRepository cartRepository;
     @Mock ProductRepository productRepository;
+    @Mock ProductImageRepository productImageRepository;
     @Mock OrderRepository orderRepository;
     @Mock OrderItemRepository orderItemRepository;
     @Mock PaymentRepository paymentRepository;
@@ -52,8 +54,8 @@ class OrderServiceBulkLoadTest {
 
     @BeforeEach
     void setUp() {
-        orderService = new OrderService(cartRepository, productRepository, orderRepository,
-                orderItemRepository, paymentRepository, userService, notificationService);
+        orderService = new OrderService(cartRepository, productRepository, productImageRepository,
+                orderRepository, orderItemRepository, paymentRepository, userService, notificationService);
     }
 
     @Test

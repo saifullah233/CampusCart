@@ -115,6 +115,7 @@ export default function ProductDetails() {
       });
       if (res.success) {
         setCartSuccess(true);
+        window.dispatchEvent(new CustomEvent('campuscart-cart-updated'));
         setTimeout(() => setCartSuccess(false), 3500);
       }
     } catch (err) {

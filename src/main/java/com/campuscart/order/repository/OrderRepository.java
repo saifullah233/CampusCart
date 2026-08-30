@@ -19,8 +19,9 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     Page<Order> findByBuyerIdOrderByCreatedAtDesc(UUID buyerId, Pageable pageable);
 
-    @Query("select distinct item.order from OrderItem item "
-            + "where item.seller.id = :sellerId order by item.order.createdAt desc")
+    @Query(
+            value = "select o from Order o where exists (select 1 from OrderItem item where item.order = o and item.seller.id = :sellerId)",
+            countQuery = "select count(o) from Order o where exists (select 1 from OrderItem item where item.order = o and item.seller.id = :sellerId)")
     Page<Order> findSellerOrders(@Param("sellerId") UUID sellerId, Pageable pageable);
 
     long countByStatus(OrderStatus status);

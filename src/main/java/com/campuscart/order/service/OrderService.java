@@ -41,6 +41,7 @@ public class OrderService {
 
     private final CartItemRepository cartRepository;
     private final ProductRepository productRepository;
+    private final com.campuscart.product.repository.ProductImageRepository productImageRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final PaymentRepository paymentRepository;
@@ -49,6 +50,7 @@ public class OrderService {
 
     public OrderService(CartItemRepository cartRepository,
                         ProductRepository productRepository,
+                        com.campuscart.product.repository.ProductImageRepository productImageRepository,
                         OrderRepository orderRepository,
                         OrderItemRepository orderItemRepository,
                         PaymentRepository paymentRepository,
@@ -56,6 +58,7 @@ public class OrderService {
                         NotificationService notificationService) {
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
+        this.productImageRepository = productImageRepository;
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.paymentRepository = paymentRepository;
@@ -215,20 +218,39 @@ public class OrderService {
         List<OrderItem> items = orderItemRepository.findByOrderIdOrderByCreatedAtAsc(order.getId());
         Payment payment = paymentRepository.findByOrderId(order.getId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Payment", order.getId()));
-        return toResponse(order, items, payment);
+        List<UUID> productIds = items.stream().map(it -> it.getProduct().getId()).toList();
+        Map<UUID, String> coverImageMap = getCoverImageMap(productIds);
+        return toResponse(order, items, payment, coverImageMap);
     }
 
     private OrderResponse toResponse(Order order, List<OrderItem> items, Payment payment) {
+        List<UUID> productIds = items.stream().map(it -> it.getProduct().getId()).toList();
+        Map<UUID, String> coverImageMap = getCoverImageMap(productIds);
+        return toResponse(order, items, payment, coverImageMap);
+    }
+
+    private OrderResponse toResponse(Order order, List<OrderItem> items, Payment payment, Map<UUID, String> coverImageMap) {
         if (payment == null) {
             throw ResourceNotFoundException.of("Payment", order.getId());
         }
         List<OrderItemResponse> itemResponses = items.stream()
                 .map(item -> new OrderItemResponse(item.getId(), item.getProduct().getId(), item.getSeller().getId(),
                         item.getSeller().getFullName(), item.getProductTitle(), item.getUnitPrice(), item.getQuantity(),
-                        item.getLineTotal()))
+                        item.getLineTotal(), coverImageMap.get(item.getProduct().getId())))
                 .toList();
-        return new OrderResponse(order.getId(), order.getBuyer().getId(), order.getTotalAmount(), order.getStatus(),
+        String buyerName = order.getBuyer() != null ? order.getBuyer().getFullName() : null;
+        return new OrderResponse(order.getId(), order.getBuyer().getId(), buyerName, order.getTotalAmount(), order.getStatus(),
                 payment.getStatus(), itemResponses, order.getCreatedAt(), order.getUpdatedAt(), order.getVersion());
+    }
+
+    private Map<UUID, String> getCoverImageMap(List<UUID> productIds) {
+        if (productIds.isEmpty()) return Map.of();
+        return productImageRepository.findByProductIdInOrderByProductIdAscCreatedAtAsc(productIds).stream()
+                .collect(Collectors.toMap(
+                        img -> img.getProduct().getId(),
+                        com.campuscart.product.domain.ProductImage::getDeliveryUrl,
+                        (existing, replacement) -> existing
+                ));
     }
 
     private record LockedPurchase(Product product, int quantity) { }

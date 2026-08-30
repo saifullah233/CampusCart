@@ -14,6 +14,6 @@ public interface WishlistItemRepository extends JpaRepository<WishlistItem, UUID
 
     Optional<WishlistItem> findByUserIdAndProductId(UUID userId, UUID productId);
 
-    @EntityGraph(attributePaths = "product")
+    @EntityGraph(attributePaths = {"product", "product.category", "product.college", "product.city", "product.seller"})
     Page<WishlistItem> findByUserId(UUID userId, Pageable pageable);
 }

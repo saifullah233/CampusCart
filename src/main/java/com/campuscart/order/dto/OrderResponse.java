@@ -10,6 +10,7 @@ import java.util.UUID;
 public record OrderResponse(
         UUID id,
         UUID buyerId,
+        String buyerName,
         BigDecimal totalAmount,
         OrderStatus status,
         PaymentStatus paymentStatus,
@@ -17,4 +18,10 @@ public record OrderResponse(
         Instant createdAt,
         Instant updatedAt,
         long version) {
+
+    public OrderResponse(UUID id, UUID buyerId, BigDecimal totalAmount, OrderStatus status,
+                         PaymentStatus paymentStatus, List<OrderItemResponse> items,
+                         Instant createdAt, Instant updatedAt, long version) {
+        this(id, buyerId, null, totalAmount, status, paymentStatus, items, createdAt, updatedAt, version);
+    }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import './ProductCard.css';
@@ -17,10 +17,17 @@ export default function ProductCard({
   const [wishlisted, setWishlisted] = useState(isWishlisted);
   const [wishlistLoading, setWishlistLoading] = useState(false);
 
+  useEffect(() => {
+    setWishlisted(isWishlisted);
+  }, [isWishlisted]);
+
   if (!product) return null;
+
+  const targetProductId = product.id || product.productId;
 
   // Derive cover image or first image
   const coverImage =
+    product.imageUrl ||
     product.images?.find((img) => img.isCover)?.imageUrl ||
     product.images?.find((img) => img.isCover)?.url ||
     product.images?.[0]?.imageUrl ||
@@ -32,12 +39,19 @@ export default function ProductCard({
     if (e.target.closest('button') || e.target.closest('a')) {
       return;
     }
-    navigate(`/products/${product.id}`);
+    navigate(`/products/${targetProductId}`);
   };
 
   const handleWishlistClick = async (e) => {
     e.stopPropagation();
     if (wishlistLoading) return;
+
+    // Check if user is logged in
+    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
 
     const nextState = !wishlisted;
     setWishlisted(nextState);
@@ -45,12 +59,13 @@ export default function ProductCard({
 
     try {
       if (nextState) {
-        await api.post(`/api/v1/wishlist/${product.id}`);
+        await api.post(`/api/v1/wishlist/${targetProductId}`);
       } else {
-        await api.delete(`/api/v1/wishlist/${product.id}`);
+        await api.delete(`/api/v1/wishlist/${targetProductId}`);
       }
+      window.dispatchEvent(new CustomEvent('campuscart-wishlist-updated'));
       if (onWishlistToggle) {
-        onWishlistToggle(product.id, nextState);
+        onWishlistToggle(targetProductId, nextState);
       }
     } catch {
       // Revert on failure

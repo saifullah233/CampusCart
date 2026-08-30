@@ -14,6 +14,11 @@ import Home from '../pages/marketplace/Home';
 import Marketplace from '../pages/marketplace/Marketplace';
 import ProductDetails from '../pages/marketplace/ProductDetails';
 import MyListings from '../pages/marketplace/MyListings';
+import Wishlist from '../pages/marketplace/Wishlist';
+import Cart from '../pages/commerce/Cart';
+import Orders from '../pages/commerce/Orders';
+import OrderDetails from '../pages/commerce/OrderDetails';
+import Chat from '../pages/chat/Chat';
 
 // Minimal Placeholder Components for Routing Validation
 const Placeholder = ({ name }) => (
@@ -193,7 +198,7 @@ export const AppRoutes = () => {
         path="/cart"
         element={
           <ProtectedRoute>
-            <Placeholder name="Shopping Cart" />
+            <Cart />
           </ProtectedRoute>
         }
       />
@@ -201,7 +206,15 @@ export const AppRoutes = () => {
         path="/wishlist"
         element={
           <ProtectedRoute>
-            <Placeholder name="Wishlist" />
+            <Wishlist />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/marketplace/wishlist"
+        element={
+          <ProtectedRoute>
+            <Wishlist />
           </ProtectedRoute>
         }
       />
@@ -209,7 +222,7 @@ export const AppRoutes = () => {
         path="/orders"
         element={
           <ProtectedRoute>
-            <Placeholder name="Orders History" />
+            <Orders />
           </ProtectedRoute>
         }
       />
@@ -217,7 +230,15 @@ export const AppRoutes = () => {
         path="/orders/:id"
         element={
           <ProtectedRoute>
-            <Placeholder name="Order Details" />
+            <OrderDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/seller/orders"
+        element={
+          <ProtectedRoute>
+            <Orders />
           </ProtectedRoute>
         }
       />
@@ -225,7 +246,7 @@ export const AppRoutes = () => {
         path="/chat"
         element={
           <ProtectedRoute>
-            <Placeholder name="Chat Messages" />
+            <Chat />
           </ProtectedRoute>
         }
       />

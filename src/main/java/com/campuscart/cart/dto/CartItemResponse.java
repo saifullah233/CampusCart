@@ -14,5 +14,12 @@ public record CartItemResponse(
         BigDecimal lineTotal,
         ProductStatus status,
         int availableQuantity,
-        boolean available) {
+        boolean available,
+        String imageUrl) {
+
+    public CartItemResponse(UUID productId, String title, UUID sellerId, String sellerName,
+                            BigDecimal unitPrice, int quantity, BigDecimal lineTotal,
+                            ProductStatus status, int availableQuantity, boolean available) {
+        this(productId, title, sellerId, sellerName, unitPrice, quantity, lineTotal, status, availableQuantity, available, null);
+    }
 }

@@ -13,5 +13,18 @@ public record WishlistItemResponse(
         ProductType productType,
         SellingReach sellingReach,
         ProductStatus status,
-        int availableQuantity) {
+        int availableQuantity,
+        String categoryName,
+        String collegeName,
+        String cityName,
+        UUID sellerId,
+        String sellerName,
+        String imageUrl) {
+
+    public WishlistItemResponse(UUID productId, String title, BigDecimal price,
+                                ProductType productType, SellingReach sellingReach,
+                                ProductStatus status, int availableQuantity) {
+        this(productId, title, price, productType, sellingReach, status, availableQuantity,
+                null, null, null, null, null, null);
+    }
 }

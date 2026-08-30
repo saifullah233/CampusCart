@@ -171,6 +171,94 @@ class CommerceIntegrationTest extends AbstractMySqlIntegrationTest {
 
     @Test
     @Transactional
+    void sellerCannotAddOwnProductToCart() throws Exception {
+        String productId = createProduct("SelfProduct", ProductType.NEW, 5);
+        mockMvc.perform(post("/api/v1/cart/items")
+                        .header("Authorization", bearer(sellerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(new AddCartItemRequest(UUID.fromString(productId), 1))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.PRODUCT_UNAVAILABLE.name()));
+    }
+
+    @Test
+    @Transactional
+    void cartItemUpdateAndRemoveWorkCorrectly() throws Exception {
+        String productId = createProduct("UpdatableCartItem", ProductType.NEW, 10);
+        addToCart(new AddCartItemRequest(UUID.fromString(productId), 2)).andExpect(status().isCreated());
+
+        // Update quantity to 4
+        mockMvc.perform(patch("/api/v1/cart/items/{productId}", productId)
+                        .header("Authorization", bearer(buyerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(new com.campuscart.cart.dto.UpdateCartItemRequest(4))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.quantity").value(4))
+                .andExpect(jsonPath("$.data.lineTotal").value(50.00));
+
+        // Delete from cart
+        mockMvc.perform(delete("/api/v1/cart/items/{productId}", productId)
+                        .header("Authorization", bearer(buyerToken)))
+                .andExpect(status().isOk());
+
+        // Cart is now empty
+        mockMvc.perform(get("/api/v1/cart").header("Authorization", bearer(buyerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items").isEmpty());
+    }
+
+    @Test
+    @Transactional
+    void sellerOrdersHistoryShowsReceivedOrders() throws Exception {
+        String productId = createProduct("SellerOrderProd", ProductType.NEW, 3);
+        addToCart(new AddCartItemRequest(UUID.fromString(productId), 1)).andExpect(status().isCreated());
+
+        // Checkout
+        mockMvc.perform(post("/api/v1/orders").header("Authorization", bearer(buyerToken)))
+                .andExpect(status().isCreated());
+
+        // Seller queries seller orders history
+        mockMvc.perform(get("/api/v1/orders/seller").header("Authorization", bearer(sellerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].buyerId").value(buyer.getId().toString()))
+                .andExpect(jsonPath("$.data.content[0].items[0].productTitle").isNotEmpty());
+    }
+
+    @Test
+    @Transactional
+    void contactSellerCreatesAndReusesConversation() throws Exception {
+        String productId = createProduct("ChatProduct", ProductType.NEW, 1);
+
+        // Buyer contacts seller for product
+        JsonNode conv1 = json(mockMvc.perform(post("/api/v1/conversations")
+                        .header("Authorization", bearer(buyerToken))
+                        .param("productId", productId))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.sellerId").value(seller.getId().toString()))
+                .andReturn().getResponse().getContentAsString());
+        String convId1 = conv1.get("data").get("id").asText();
+
+        // Contact again for same product -> reuses existing conversation
+        JsonNode conv2 = json(mockMvc.perform(post("/api/v1/conversations")
+                        .header("Authorization", bearer(buyerToken))
+                        .param("productId", productId))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+        String convId2 = conv2.get("data").get("id").asText();
+
+        assertThat(convId1).isEqualTo(convId2);
+
+        // Seller cannot start buyer conversation with own product
+        mockMvc.perform(post("/api/v1/conversations")
+                        .header("Authorization", bearer(sellerToken))
+                        .param("productId", productId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error.code").value(ErrorCode.PRODUCT_UNAVAILABLE.name()));
+    }
+
+    @Test
+    @Transactional
     void cancellationRestoresReservedQuantity() throws Exception {
         String productId = createProduct("Cancel", ProductType.SECOND_HAND, 1);
         addToCart(new AddCartItemRequest(UUID.fromString(productId), 1)).andExpect(status().isCreated());
