@@ -1,0 +1,69 @@
+/* ═══════════════════════════════════════════
+   Marketplace Scope Tabs
+   ═══════════════════════════════════════════ */
+
+.cc-scope-tabs-container {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+
+.cc-scope-tabs-container::-webkit-scrollbar {
+  display: none;
+}
+
+.cc-scope-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  padding: 5px;
+  border-radius: 14px;
+  width: max-content;
+  min-width: 100%;
+}
+
+@media (min-width: 768px) {
+  .cc-scope-tabs {
+    min-width: auto;
+  }
+}
+
+.cc-scope-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cc-scope-tab:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cc-scope-tab--active {
+  background: #ffffff !important;
+  color: #2563eb !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.cc-scope-tab__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cc-scope-tab__label {
+  line-height: 1;
+}

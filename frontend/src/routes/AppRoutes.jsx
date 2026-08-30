@@ -11,6 +11,9 @@ import ForgotPassword from '../pages/auth/ForgotPassword';
 import VerifyPasswordResetOtp from '../pages/auth/VerifyPasswordResetOtp';
 import ResetPassword from '../pages/auth/ResetPassword';
 import Home from '../pages/marketplace/Home';
+import Marketplace from '../pages/marketplace/Marketplace';
+import ProductDetails from '../pages/marketplace/ProductDetails';
+import MyListings from '../pages/marketplace/MyListings';
 
 // Minimal Placeholder Components for Routing Validation
 const Placeholder = ({ name }) => (
@@ -134,7 +137,15 @@ export const AppRoutes = () => {
         path="/browse"
         element={
           <ProtectedRoute>
-            <Home />
+            <Marketplace />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/marketplace"
+        element={
+          <ProtectedRoute>
+            <Marketplace />
           </ProtectedRoute>
         }
       />
@@ -142,7 +153,31 @@ export const AppRoutes = () => {
         path="/products/:id"
         element={
           <ProtectedRoute>
-            <Placeholder name="Product Details" />
+            <ProductDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/marketplace/product/:id"
+        element={
+          <ProtectedRoute>
+            <ProductDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-listings"
+        element={
+          <ProtectedRoute>
+            <MyListings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/marketplace/my-listings"
+        element={
+          <ProtectedRoute>
+            <MyListings />
           </ProtectedRoute>
         }
       />

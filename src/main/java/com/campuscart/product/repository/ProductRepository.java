@@ -22,6 +22,10 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
     Page<Product> findByStatusOrderByCreatedAtDesc(com.campuscart.product.domain.ProductStatus status,
                                                     Pageable pageable);
 
+    Page<Product> findBySellerIdAndStatus(UUID sellerId, com.campuscart.product.domain.ProductStatus status, Pageable pageable);
+
+    Page<Product> findBySellerIdAndStatusNot(UUID sellerId, com.campuscart.product.domain.ProductStatus status, Pageable pageable);
+
     Page<Product> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     long countByStatus(com.campuscart.product.domain.ProductStatus status);

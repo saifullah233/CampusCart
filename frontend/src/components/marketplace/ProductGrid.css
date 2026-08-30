@@ -1,0 +1,83 @@
+/* ═══════════════════════════════════════════
+   Product Grid Styles & Skeleton Loader
+   ═══════════════════════════════════════════ */
+
+.cc-product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 22px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .cc-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+}
+
+/* ─── Skeleton Card ─── */
+.cc-product-card-skeleton {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cc-skeleton-box {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: cc-skeleton-shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+
+.cc-skeleton-box--img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 0;
+}
+
+.cc-skeleton-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cc-skeleton-box--badge {
+  width: 70px;
+  height: 16px;
+}
+
+.cc-skeleton-box--title {
+  width: 90%;
+  height: 16px;
+}
+
+.cc-skeleton-box--title-short {
+  width: 60%;
+  height: 16px;
+}
+
+.cc-skeleton-box--price {
+  width: 80px;
+  height: 20px;
+  margin-top: 4px;
+}
+
+.cc-skeleton-box--footer {
+  width: 100%;
+  height: 14px;
+  margin-top: 6px;
+}
+
+@keyframes cc-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

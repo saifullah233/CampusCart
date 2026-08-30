@@ -193,6 +193,37 @@ public class ProductService {
         return PageResponse.from(mapped);
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<ProductResponse> findMyListings(UUID principalId, ProductStatus status, int page, int size, String sort) {
+        User seller = requireActiveUser(principalId);
+        int validPage = Math.max(0, page);
+        int validSize = (size < 1 || size > MAX_PAGE_SIZE) ? 20 : size;
+        PageRequest pageRequest = PageRequest.of(validPage, validSize, parseSort(sort));
+        Page<Product> productPage = (status == null)
+                ? productRepository.findBySellerIdAndStatusNot(seller.getId(), ProductStatus.DELETED, pageRequest)
+                : productRepository.findBySellerIdAndStatus(seller.getId(), status, pageRequest);
+
+        java.util.List<UUID> ids = productPage.getContent().stream().map(Product::getId).toList();
+        java.util.List<Product> enriched = ids.isEmpty()
+                ? java.util.List.of()
+                : productRepository.findAllWithAssociationsByIdIn(ids);
+        java.util.Map<UUID, Product> enrichedById = enriched.stream()
+                .collect(java.util.stream.Collectors.toMap(Product::getId, p -> p));
+
+        java.util.List<com.campuscart.product.domain.ProductImage> images = ids.isEmpty()
+                ? java.util.List.of()
+                : productImageRepository.findByProductIdInOrderByProductIdAscCreatedAtAsc(ids);
+        java.util.Map<UUID, java.util.List<com.campuscart.product.domain.ProductImage>> imagesByProduct = images.stream()
+                .collect(java.util.stream.Collectors.groupingBy(i -> i.getProduct().getId(), java.util.stream.Collectors.toList()));
+
+        Page<ProductResponse> mapped = productPage.map(product -> {
+            Product enrichedProduct = enrichedById.getOrDefault(product.getId(), product);
+            java.util.List<com.campuscart.product.domain.ProductImage> imgs = imagesByProduct.getOrDefault(product.getId(), java.util.List.of());
+            return productMapper.toResponse(enrichedProduct, imgs);
+        });
+        return PageResponse.from(mapped);
+    }
+
     @Transactional
     public ProductResponse delete(UUID principalId, UUID productId) {
         Product product = requireWritableProduct(principalId, productId);

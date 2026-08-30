@@ -393,6 +393,69 @@ class ProductMarketplaceIntegrationTest extends AbstractMySqlIntegrationTest {
 
     @Test
     @Transactional
+    void myListingsReturnsOnlyAuthenticatedSellerProducts() throws Exception {
+        JsonNode prod1 = create(studentSellerToken, product("Seller Item 1", ProductType.NEW, SellingReach.CAMPUS_ONLY));
+        JsonNode prod2 = create(studentSellerToken, product("Seller Item 2", ProductType.SECOND_HAND, SellingReach.OUTSIDE_CAMPUS));
+        create(otherCampusStudentToken, product("Other Student Item", ProductType.NEW, SellingReach.OUTSIDE_CAMPUS));
+
+        mockMvc.perform(get("/api/v1/products/me")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(2))
+                .andExpect(jsonPath("$.data.content[0].sellerId").value(studentSeller.getId().toString()))
+                .andExpect(jsonPath("$.data.content[1].sellerId").value(studentSeller.getId().toString()));
+    }
+
+    @Test
+    @Transactional
+    void myListingsFilteredByStatus() throws Exception {
+        JsonNode prod = create(studentSellerToken, product("Active Item", ProductType.NEW, SellingReach.CAMPUS_ONLY));
+        UUID productId = UUID.fromString(prod.get("data").get("id").asText());
+
+        // Mark as sold
+        mockMvc.perform(post("/api/v1/products/" + productId + "/sold")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("SOLD"));
+
+        // Query active only -> 0
+        mockMvc.perform(get("/api/v1/products/me?status=ACTIVE")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(0));
+
+        // Query sold only -> 1
+        mockMvc.perform(get("/api/v1/products/me?status=SOLD")
+                        .header("Authorization", "Bearer " + studentSellerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(productId.toString()));
+    }
+
+    @Test
+    @Transactional
+    void unauthorizedSellerModificationAttemptFails() throws Exception {
+        JsonNode prod = create(studentSellerToken, product("Seller Private Item", ProductType.NEW, SellingReach.CAMPUS_ONLY));
+        UUID productId = UUID.fromString(prod.get("data").get("id").asText());
+
+        // Other student tries to mark sold -> 403 Forbidden
+        mockMvc.perform(post("/api/v1/products/" + productId + "/sold")
+                        .header("Authorization", "Bearer " + otherCampusStudentToken))
+                .andExpect(status().isForbidden());
+
+        // Other student tries to deactivate -> 403 Forbidden
+        mockMvc.perform(post("/api/v1/products/" + productId + "/deactivate")
+                        .header("Authorization", "Bearer " + otherCampusStudentToken))
+                .andExpect(status().isForbidden());
+
+        // Other student tries to delete -> 403 Forbidden
+        mockMvc.perform(delete("/api/v1/products/" + productId)
+                        .header("Authorization", "Bearer " + otherCampusStudentToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
     void unauthenticatedUserCannotCreateListing() throws Exception {
         org.springframework.mock.web.MockMultipartFile img = createMockImage("images", "jpeg", "image/jpeg");
 
