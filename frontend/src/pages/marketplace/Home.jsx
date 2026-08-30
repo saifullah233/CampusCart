@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useId } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import ProductGrid from '../../components/marketplace/ProductGrid';
 import SellModal from '../../components/marketplace/SellModal';
 import api from '../../services/api';
 import './Home.css';
@@ -63,134 +65,77 @@ function getCategoryIcon(slug, name) {
 }
 
 export default function Home() {
+  const navigate = useNavigate();
+
   const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState(null);
 
   const [popularProducts, setPopularProducts] = useState([]);
   const [recentProducts, setRecentProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
 
   const [wishlistIds, setWishlistIds] = useState(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
   const [sellModalOpen, setSellModalOpen] = useState(false);
 
   const grad1Id = useId();
   const grad2Id = useId();
 
-  // Initial Data Load
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadInitialData = async () => {
-      try {
-        const [catRes, prodRes, wishRes] = await Promise.allSettled([
-          api.get('/api/v1/categories'),
-          api.get('/api/v1/products?page=0&size=8&sort=createdAt,desc'),
-          api.get('/api/v1/wishlist?page=0&size=50'),
-        ]);
-
-        if (!cancelled) {
-          if (catRes.status === 'fulfilled' && catRes.value?.success && Array.isArray(catRes.value.data)) {
-            setCategories(catRes.value.data);
-          }
-          if (prodRes.status === 'fulfilled' && prodRes.value?.success && prodRes.value.data?.content) {
-            setPopularProducts(prodRes.value.data.content);
-            setRecentProducts(prodRes.value.data.content.slice(0, 4));
-          }
-          if (wishRes.status === 'fulfilled' && wishRes.value?.success && wishRes.value.data?.content) {
-            setWishlistIds(new Set(wishRes.value.data.content.map((w) => w.productId)));
-          }
-        }
-      } catch {
-        // Fallback
-      } finally {
-        if (!cancelled) {
-          setCategoriesLoading(false);
-          setProductsLoading(false);
-        }
-      }
-    };
-
-    loadInitialData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Fetch Products on Category or Search Filter
-  const fetchFilteredProducts = useCallback(async (catId, query) => {
+  // Load Initial Data
+  const loadData = useCallback(async () => {
     try {
       setProductsLoading(true);
-      let url = '/api/v1/products?page=0&size=8&sort=createdAt,desc';
-      if (catId) url += `&categoryId=${catId}`;
-      if (query) url += `&keyword=${encodeURIComponent(query)}`;
+      const [catRes, prodRes, recentRes, wishRes] = await Promise.allSettled([
+        api.get('/api/v1/categories'),
+        api.get('/api/v1/products?page=0&size=8&sort=createdAt,desc'),
+        api.get('/api/v1/products?page=0&size=4&sort=createdAt,desc'),
+        api.get('/api/v1/wishlist?page=0&size=50'),
+      ]);
 
-      const res = await api.get(url);
-      if (res.success && res.data?.content) {
-        setPopularProducts(res.data.content);
-        setRecentProducts(res.data.content.slice(0, 4));
-      } else {
-        setPopularProducts([]);
-        setRecentProducts([]);
+      if (catRes.status === 'fulfilled' && catRes.value?.success && Array.isArray(catRes.value.data)) {
+        setCategories(catRes.value.data);
+      }
+      if (prodRes.status === 'fulfilled' && prodRes.value?.success && prodRes.value.data?.content) {
+        setPopularProducts(prodRes.value.data.content);
+      }
+      if (recentRes.status === 'fulfilled' && recentRes.value?.success && recentRes.value.data?.content) {
+        setRecentProducts(recentRes.value.data.content);
+      }
+      if (wishRes.status === 'fulfilled' && wishRes.value?.success && wishRes.value.data?.content) {
+        const ids = new Set(wishRes.value.data.content.map((w) => w.product?.id || w.productId).filter(Boolean));
+        setWishlistIds(ids);
       }
     } catch {
-      setPopularProducts([]);
-      setRecentProducts([]);
+      // Graceful fallback
     } finally {
+      setCategoriesLoading(false);
       setProductsLoading(false);
     }
   }, []);
 
-  // Handle Category Filter Click
-  const handleCategoryClick = (catId) => {
-    const nextCat = selectedCategory === catId ? null : catId;
-    setSelectedCategory(nextCat);
-    fetchFilteredProducts(nextCat, searchQuery);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Wishlist toggle handler
+  const handleWishlistToggle = (productId, nextState) => {
+    setWishlistIds((prev) => {
+      const copy = new Set(prev);
+      if (nextState) copy.add(productId);
+      else copy.delete(productId);
+      return copy;
+    });
   };
 
-  // Handle Search Input Change
-  const handleSearch = (q) => {
-    setSearchQuery(q);
-    fetchFilteredProducts(selectedCategory, q);
-  };
-
-  // Handle Wishlist Toggle
-  const handleToggleWishlist = async (productId, e) => {
-    e.stopPropagation();
-    const isWishlisted = wishlistIds.has(productId);
-    try {
-      if (isWishlisted) {
-        await api.delete(`/api/v1/wishlist/${productId}`);
-        setWishlistIds((prev) => {
-          const next = new Set(prev);
-          next.delete(productId);
-          return next;
-        });
-      } else {
-        await api.post(`/api/v1/wishlist/${productId}`);
-        setWishlistIds((prev) => new Set(prev).add(productId));
-      }
-    } catch {
-      // Wishlist toggle error
+  // Search from Navbar on Home navigates to /browse?keyword=...
+  const handleNavbarSearch = (q) => {
+    if (q && q.trim()) {
+      navigate(`/browse?keyword=${encodeURIComponent(q.trim())}`);
     }
-  };
-
-  // Format currency
-  const formatPrice = (val) => {
-    if (val == null) return '₹0';
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(val);
   };
 
   return (
     <DashboardLayout
-      onSearch={handleSearch}
-      searchQuery={searchQuery}
+      onSearch={handleNavbarSearch}
       onOpenSell={() => setSellModalOpen(true)}
     >
       <div className="home-container">
@@ -202,19 +147,12 @@ export default function Home() {
               <span className="home-hero__title-blue">All on Campus.</span>
             </h1>
             <p className="home-hero__subtitle">
-              Join thousands of students buying and selling trusted items across your campus.
+              Join thousands of students buying and selling trusted textbooks, electronics, and dorm essentials across campus.
             </p>
             <div className="home-hero__actions">
-              <button
-                type="button"
-                className="home-hero__btn-primary"
-                onClick={() => {
-                  const el = document.getElementById('marketplace-listings');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                Explore Now
-              </button>
+              <Link to="/browse" className="home-hero__btn-primary">
+                Explore Marketplace
+              </Link>
               <button
                 type="button"
                 className="home-hero__btn-secondary"
@@ -226,7 +164,6 @@ export default function Home() {
           </div>
 
           <div className="home-hero__illustration">
-            {/* Approved Clean Vector Campus Graphic */}
             <svg
               className="home-hero__svg"
               viewBox="0 0 420 240"
@@ -248,195 +185,109 @@ export default function Home() {
               <circle cx="90" cy="50" r="28" fill="#e0f2fe" opacity="0.6" />
               <circle cx="120" cy="45" r="36" fill="#e0f2fe" opacity="0.6" />
               <circle cx="150" cy="52" r="24" fill="#e0f2fe" opacity="0.6" />
+              <circle cx="310" cy="60" r="32" fill="#e0f2fe" opacity="0.5" />
+              <circle cx="340" cy="50" r="40" fill="#e0f2fe" opacity="0.5" />
 
-              {/* Campus Building */}
-              <rect x="230" y="70" width="180" height="150" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
-              <rect x="290" y="20" width="60" height="180" rx="3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.5" />
-              <polygon points="320,0 280,22 360,22" fill="#3b82f6" />
-              <circle cx="320" cy="50" r="14" fill="#eff6ff" stroke="#3b82f6" strokeWidth="1.5" />
-              <line x1="320" y1="50" x2="320" y2="42" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
-              <line x1="320" y1="50" x2="328" y2="50" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+              {/* Ground Curve */}
+              <path d="M0 210 Q 210 180, 420 210 L 420 240 L 0 240 Z" fill={`url(#${grad1Id})`} />
 
-              {/* Windows Grid */}
-              <rect x="245" y="85" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="270" y="85" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="352" y="85" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="378" y="85" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="245" y="115" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="270" y="115" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="352" y="115" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="378" y="115" width="18" height="14" rx="2" fill="#bfdbfe" />
-              <rect x="306" y="170" width="28" height="50" rx="4" fill="#2563eb" />
+              {/* Campus Building Elements */}
+              <rect x="50" y="90" width="80" height="110" rx="6" fill="#ffffff" stroke="#bfdbfe" strokeWidth="2" />
+              <polygon points="50,90 90,60 130,90" fill={`url(#${grad2Id})`} />
+              <circle cx="90" cy="78" r="7" fill="#ffffff" />
+              <rect x="65" y="105" width="14" height="16" rx="2" fill="#dbeafe" />
+              <rect x="95" y="105" width="14" height="16" rx="2" fill="#dbeafe" />
+              <rect x="65" y="130" width="14" height="16" rx="2" fill="#dbeafe" />
+              <rect x="95" y="130" width="14" height="16" rx="2" fill="#dbeafe" />
+              <rect x="80" y="165" width="20" height="35" rx="3" fill="#2563eb" />
 
-              {/* Trees */}
-              <circle cx="210" cy="180" r="26" fill="#86efac" />
-              <rect x="207" y="196" width="6" height="30" fill="#a16207" />
-              <circle cx="180" cy="190" r="20" fill="#bbf7d0" />
-              <rect x="178" y="202" width="4" height="24" fill="#a16207" />
+              {/* Central Marketplace Cart / Stall */}
+              <g transform="translate(160, 80)">
+                <path d="M10 50 L 110 50 L 100 110 L 20 110 Z" fill="#ffffff" stroke="#2563eb" strokeWidth="2.5" />
+                <path d="M5 50 Q 60 20, 115 50" fill="none" stroke="#2563eb" strokeWidth="3" />
+                <path d="M5 50 L 20 25 L 100 25 L 115 50" fill="#2563eb" opacity="0.9" />
+                <path d="M20 25 L 35 50 M45 25 L 60 50 M75 25 L 90 50" stroke="#ffffff" strokeWidth="2" />
+                <rect x="30" y="65" width="20" height="24" rx="3" fill="#f59e0b" />
+                <rect x="60" y="60" width="28" height="20" rx="3" fill="#10b981" />
+                <circle cx="35" cy="115" r="10" fill="#334155" />
+                <circle cx="35" cy="115" r="4" fill="#ffffff" />
+                <circle cx="85" cy="115" r="10" fill="#334155" />
+                <circle cx="85" cy="115" r="4" fill="#ffffff" />
+              </g>
 
-              {/* Student 1 (Left with backpack and phone) */}
-              <circle cx="130" cy="130" r="12" fill="#fed7aa" />
-              <path d="M124 122 Q130 116 136 122 Q140 128 136 130 Z" fill="#1e293b" />
-              <rect x="122" y="144" width="20" height="42" rx="6" fill="#2563eb" />
-              <rect x="114" y="148" width="10" height="26" rx="4" fill="#3b82f6" />
-              <line x1="126" y1="186" x2="124" y2="226" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
-              <line x1="138" y1="186" x2="140" y2="226" stroke="#1e293b" strokeWidth="6" strokeLinecap="round" />
-              <rect x="144" y="150" width="8" height="14" rx="2" fill="#0f172a" />
+              {/* Student Figure 1 */}
+              <g transform="translate(295, 100)">
+                <circle cx="16" cy="14" r="10" fill="#fbbf24" />
+                <path d="M8 20 C 8 16, 24 16, 24 20" fill="#1e293b" />
+                <rect x="8" y="26" width="16" height="32" rx="6" fill="#3b82f6" />
+                <rect x="2" y="30" width="6" height="20" rx="3" fill="#fbbf24" />
+                <rect x="24" y="30" width="6" height="18" rx="3" fill="#fbbf24" />
+                <rect x="24" y="44" width="14" height="18" rx="3" fill="#f43f5e" />
+                <line x1="12" y1="58" x2="10" y2="85" stroke="#1e293b" strokeWidth="4" strokeLinecap="round" />
+                <line x1="20" y1="58" x2="22" y2="85" stroke="#1e293b" strokeWidth="4" strokeLinecap="round" />
+              </g>
 
-              {/* Student 2 (Right holding tablet) */}
-              <circle cx="185" cy="136" r="11" fill="#fed7aa" />
-              <path d="M178 128 Q185 120 192 128 Q195 138 186 142 Z" fill="#1e293b" />
-              <rect x="177" y="148" width="18" height="38" rx="6" fill="#fbbf24" />
-              <line x1="180" y1="186" x2="178" y2="226" stroke="#1e293b" strokeWidth="5" strokeLinecap="round" />
-              <line x1="190" y1="186" x2="192" y2="226" stroke="#1e293b" strokeWidth="5" strokeLinecap="round" />
-              <rect x="166" y="156" width="14" height="18" rx="2" fill="#1e293b" />
+              {/* Floating Verified & Heart Badges */}
+              <g transform="translate(30, 30)">
+                <circle cx="16" cy="16" r="16" fill="#ffffff" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.08))" />
+                <path d="M11 16 L 14 19 L 21 12" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </g>
+
+              <g transform="translate(350, 20)">
+                <circle cx="16" cy="16" r="16" fill="#ffffff" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.08))" />
+                <path d="M16 22 L 14.5 20.6 C 9.5 16 6 12.8 6 9 C 6 5.8 8.4 3.5 11.5 3.5 C 13.2 3.5 14.9 4.3 16 5.6 C 17.1 4.3 18.8 3.5 20.5 3.5 C 23.6 3.5 26 5.8 26 9 C 26 12.8 22.5 16 17.5 20.6 Z" fill="#ef4444" transform="scale(0.7) translate(3, 4)" />
+              </g>
             </svg>
           </div>
         </section>
 
-        {/* ─── Top Categories ─── */}
+        {/* ─── Categories Section ─── */}
         <section className="home-section">
           <div className="home-section__header">
-            <h2 className="home-section__title">Top Categories</h2>
-            <button
-              type="button"
-              className="home-section__link"
-              onClick={() => {
-                setSelectedCategory(null);
-                fetchFilteredProducts(null, searchQuery);
-              }}
-            >
-              View all categories
-            </button>
+            <h2 className="home-section__title">Categories</h2>
+            <Link to="/browse" className="home-section__link">
+              View all
+            </Link>
           </div>
 
           <div className="home-categories-grid">
-            {categoriesLoading ? (
-              Array.from({ length: 6 }).map((_, idx) => (
-                <div key={idx} className="home-skeleton" style={{ height: '76px' }} />
-              ))
-            ) : categories.length > 0 ? (
-              categories.map((cat) => {
-                const isSelected = selectedCategory === cat.id;
-                return (
-                  <div
+            {categoriesLoading
+              ? Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="home-skeleton" style={{ height: '110px' }} />
+                ))
+              : categories.map((cat) => (
+                  <button
                     key={cat.id}
-                    className={`home-category-card ${isSelected ? 'home-category-card--active' : ''}`}
-                    onClick={() => handleCategoryClick(cat.id)}
+                    type="button"
+                    className="home-category-card"
+                    onClick={() => navigate(`/browse?categoryId=${cat.id}`)}
                   >
                     <div className="home-category-card__icon-box">
                       {getCategoryIcon(cat.slug, cat.name)}
                     </div>
-                    <div className="home-category-card__info">
-                      <span className="home-category-card__name" title={cat.name}>
-                        {cat.name}
-                      </span>
-                      <span className="home-category-card__count">    </span>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="home-category-card">
-                <div className="home-category-card__icon-box">
-                  {getCategoryIcon('all', 'All')}
-                </div>
-                <div className="home-category-card__info">
-                  <span className="home-category-card__name">All Categories</span>
-                  <span className="home-category-card__count">Active</span>
-                </div>
-              </div>
-            )}
+                    <span className="home-category-card__name">{cat.name}</span>
+                  </button>
+                ))}
           </div>
         </section>
 
-        {/* ─── Popular Listings ─── */}
+        {/* ─── Popular Products ─── */}
         <section className="home-section" id="marketplace-listings">
           <div className="home-section__header">
-            <h2 className="home-section__title">Popular Listings</h2>
-            <button
-              type="button"
-              className="home-section__link"
-              onClick={() => fetchFilteredProducts(selectedCategory, searchQuery)}
-            >
+            <h2 className="home-section__title">Featured Listings</h2>
+            <Link to="/browse" className="home-section__link">
               View all
-            </button>
+            </Link>
           </div>
 
           {productsLoading ? (
-            <div className="home-products-grid">
-              {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="home-skeleton" style={{ height: '280px' }} />
-              ))}
-            </div>
+            <ProductGrid loading={true} skeletonCount={8} />
           ) : popularProducts.length > 0 ? (
-            <div className="home-products-grid">
-              {popularProducts.map((product) => {
-                const isWishlisted = wishlistIds.has(product.id);
-                const hasImage = product.images && product.images.length > 0;
-                return (
-                  <div key={product.id} className="home-product-card">
-                    <div className="home-product-card__image-container">
-                      {hasImage ? (
-                        <img
-                          src={product.images[0].imageUrl || product.images[0].url}
-                          alt={product.title}
-                          className="home-product-card__image"
-                        />
-                      ) : (
-                        <div className="home-product-card__placeholder-icon">
-                          {getCategoryIcon(product.categorySlug, product.categoryName)}
-                        </div>
-                      )}
-                      <span className="home-product-card__badge-new">NEW</span>
-                      <button
-                        type="button"
-                        className={`home-product-card__wishlist-btn ${isWishlisted ? 'home-product-card__wishlist-btn--active' : ''}`}
-                        onClick={(e) => handleToggleWishlist(product.id, e)}
-                        aria-label="Add to wishlist"
-                      >
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill={isWishlisted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="home-product-card__body">
-                      <h3 className="home-product-card__title" title={product.title}>
-                        {product.title}
-                      </h3>
-                      <div className="home-product-card__price">
-                        {formatPrice(product.price)}
-                      </div>
-                      <div className="home-product-card__location">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        <span>{product.collegeName || product.cityName || 'Campus'}</span>
-                      </div>
-
-                      <div className="home-product-card__footer">
-                        <div className="home-product-card__seller">
-                          <div className="home-product-card__seller-avatar">
-                            {(product.sellerName || 'S').substring(0, 1).toUpperCase()}
-                          </div>
-                          <span className="home-product-card__seller-name">
-                            {product.sellerName || 'Seller'}
-                          </span>
-                        </div>
-                        <div className="home-product-card__rating">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" strokeWidth="1">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                          <span>5.0</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <ProductGrid
+              products={popularProducts}
+              wishlistIds={wishlistIds}
+              onWishlistToggle={handleWishlistToggle}
+            />
           ) : (
             <div className="home-empty-state">
               <div className="home-empty-state__icon-box">
@@ -446,9 +297,9 @@ export default function Home() {
                   <line x1="12" y1="17" x2="12" y2="21" />
                 </svg>
               </div>
-              <h3 className="home-empty-state__title">No listings yet</h3>
+              <h3 className="home-empty-state__title">No listings available yet</h3>
               <p className="home-empty-state__desc">
-                Be the first to sell something on CampusCart and reach students across your campus.
+                Be the first to list a textbook, dorm item, or electronics to reach buyers across campus.
               </p>
               <button
                 type="button"
@@ -462,101 +313,22 @@ export default function Home() {
         </section>
 
         {/* ─── Recent Listings ─── */}
-        <section className="home-section">
-          <div className="home-section__header">
-            <h2 className="home-section__title">Recent Listings</h2>
-            <button
-              type="button"
-              className="home-section__link"
-              onClick={() => fetchFilteredProducts(selectedCategory, searchQuery)}
-            >
-              View all
-            </button>
-          </div>
-
-          {productsLoading ? (
-            <div className="home-products-grid">
-              {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="home-skeleton" style={{ height: '280px' }} />
-              ))}
+        {recentProducts.length > 0 && (
+          <section className="home-section">
+            <div className="home-section__header">
+              <h2 className="home-section__title">Recent Listings</h2>
+              <Link to="/browse" className="home-section__link">
+                View all
+              </Link>
             </div>
-          ) : recentProducts.length > 0 ? (
-            <div className="home-products-grid">
-              {recentProducts.map((product) => {
-                const isWishlisted = wishlistIds.has(product.id);
-                const hasImage = product.images && product.images.length > 0;
-                return (
-                  <div key={product.id} className="home-product-card">
-                    <div className="home-product-card__image-container">
-                      {hasImage ? (
-                        <img
-                          src={product.images[0].imageUrl || product.images[0].url}
-                          alt={product.title}
-                          className="home-product-card__image"
-                        />
-                      ) : (
-                        <div className="home-product-card__placeholder-icon">
-                          {getCategoryIcon(product.categorySlug, product.categoryName)}
-                        </div>
-                      )}
-                      <span className="home-product-card__badge-new">NEW</span>
-                      <button
-                        type="button"
-                        className={`home-product-card__wishlist-btn ${isWishlisted ? 'home-product-card__wishlist-btn--active' : ''}`}
-                        onClick={(e) => handleToggleWishlist(product.id, e)}
-                        aria-label="Add to wishlist"
-                      >
-                        <svg width="17" height="17" viewBox="0 0 24 24" fill={isWishlisted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                        </svg>
-                      </button>
-                    </div>
 
-                    <div className="home-product-card__body">
-                      <h3 className="home-product-card__title" title={product.title}>
-                        {product.title}
-                      </h3>
-                      <div className="home-product-card__price">
-                        {formatPrice(product.price)}
-                      </div>
-                      <div className="home-product-card__location">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                          <circle cx="12" cy="10" r="3" />
-                        </svg>
-                        <span>{product.collegeName || product.cityName || 'Campus'}</span>
-                      </div>
-
-                      <div className="home-product-card__footer">
-                        <div className="home-product-card__seller">
-                          <div className="home-product-card__seller-avatar">
-                            {(product.sellerName || 'S').substring(0, 1).toUpperCase()}
-                          </div>
-                          <span className="home-product-card__seller-name">
-                            {product.sellerName || 'Seller'}
-                          </span>
-                        </div>
-                        <div className="home-product-card__rating">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" strokeWidth="1">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                          </svg>
-                          <span>5.0</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="home-empty-state">
-              <h3 className="home-empty-state__title">No recent listings</h3>
-              <p className="home-empty-state__desc">
-                Check back soon for fresh deals from students near you.
-              </p>
-            </div>
-          )}
-        </section>
+            <ProductGrid
+              products={recentProducts}
+              wishlistIds={wishlistIds}
+              onWishlistToggle={handleWishlistToggle}
+            />
+          </section>
+        )}
       </div>
 
       {/* Sell Item Modal */}
@@ -565,7 +337,7 @@ export default function Home() {
         onClose={() => setSellModalOpen(false)}
         categories={categories}
         onProductCreated={() => {
-          fetchFilteredProducts(selectedCategory, searchQuery);
+          loadData();
         }}
       />
     </DashboardLayout>

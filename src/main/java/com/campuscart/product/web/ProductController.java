@@ -90,6 +90,16 @@ public class ProductController {
         return ApiResponse.ok(productService.search(principal.id(), query));
     }
 
+    @GetMapping("/me")
+    public ApiResponse<PageResponse<ProductResponse>> myListings(
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestParam(required = false) ProductStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort) {
+        return ApiResponse.ok(productService.findMyListings(principal.id(), status, page, size, sort));
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<ProductResponse> get(@AuthenticationPrincipal AuthenticatedUser principal,
                                              @PathVariable UUID id) {
