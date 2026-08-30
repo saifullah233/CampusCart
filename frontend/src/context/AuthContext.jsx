@@ -41,7 +41,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    window.dispatchEvent(new Event('auth-logout'));
+    localStorage.removeItem('cc_accessToken');
+    localStorage.removeItem('cc_refreshToken');
+    localStorage.removeItem('cc_user');
+    setUser(null);
+    setLoading(false);
   };
 
   const value = {

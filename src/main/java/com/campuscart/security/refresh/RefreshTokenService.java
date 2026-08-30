@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Issues opaque refresh tokens and rotates them atomically.
@@ -80,6 +81,16 @@ public class RefreshTokenService {
         }
         refreshTokenRepository.findByTokenHashForUpdate(Hashing.sha256Hex(rawToken))
                 .ifPresent(token -> token.revoke(clock.instant(), null));
+    }
+
+    @Transactional
+    public void revokeAllForUser(UUID userId) {
+        if (userId == null) {
+            return;
+        }
+        Instant now = clock.instant();
+        refreshTokenRepository.findActiveByUserIdForUpdate(userId)
+                .forEach(token -> token.revoke(now, null));
     }
 
     @Transactional

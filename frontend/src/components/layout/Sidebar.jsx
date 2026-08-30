@@ -22,7 +22,7 @@ export default function Sidebar({ isOpen, onClose, onOpenSell }) {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   const isVerifiedStudent = user?.accountType === 'STUDENT' && (user?.collegeName || user?.collegeId);

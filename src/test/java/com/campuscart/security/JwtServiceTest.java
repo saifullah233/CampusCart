@@ -54,7 +54,7 @@ class JwtServiceTest {
         JwtService service = new JwtService(properties(Duration.ofMinutes(15)), Clock.fixed(START, ZoneId.of("UTC")));
         String token = service.generateAccessToken(UUID.randomUUID(), "student@example.edu", Role.STUDENT);
 
-        String tampered = token.substring(0, token.length() - 1) + (token.endsWith("a") ? "b" : "a");
+        String tampered = token.substring(0, 15) + (token.charAt(15) == 'x' ? 'y' : 'x') + token.substring(16);
 
         assertThatThrownBy(() -> service.parseAccessToken(tampered))
                 .isInstanceOf(InvalidTokenException.class)

@@ -66,19 +66,31 @@ public class OtpService {
 
     @Transactional
     public OtpChallengeResponse issue(User user, OtpChannel channel, String destination) {
+        return issueForPurpose(user, channel, OtpPurpose.REGISTRATION, destination);
+    }
+
+    @Transactional
+    public OtpChallengeResponse issueForPurpose(User user, OtpChannel channel, OtpPurpose purpose, String destination) {
         ensureCanIssue(destination);
         Instant now = clock.instant();
+        Optional<OtpChallenge> activeOpt = challengeRepository.findActiveUnverifiedChallengeByPurpose(user.getId(), channel, purpose, now);
+        if (activeOpt.isPresent()) {
+            OtpChallenge active = activeOpt.get();
+            active.markSuperseded(now);
+            challengeRepository.saveAndFlush(active);
+        }
+
         String code = SecureRandomTokens.numericCode(properties.getCodeLength());
         Instant expiresAt = now.plus(properties.getTtl());
         OtpChallenge challenge = challengeRepository.saveAndFlush(new OtpChallenge(
                 user,
                 channel,
-                OtpPurpose.REGISTRATION,
+                purpose,
                 Hashing.sha256Hex(destination),
                 passwordEncoder.encode(code),
                 expiresAt,
                 now.plus(properties.getResendCooldown())));
-        deliveryGateway.deliver(new OtpDeliveryMessage(channel, destination, code, expiresAt));
+        deliveryGateway.deliver(new OtpDeliveryMessage(channel, destination, code, expiresAt, purpose));
         return OtpChallengeResponse.from(challenge, destination);
     }
 
@@ -107,7 +119,7 @@ public class OtpService {
             OtpRateLimitedException.class,
             OtpAlreadyVerifiedException.class
     })
-    public User verify(UUID challengeId, String rawCode) {
+    public OtpChallenge verifyChallenge(UUID challengeId, String rawCode, OtpPurpose expectedPurpose) {
         if (challengeId == null || rawCode == null || !rawCode.matches("\\d{4,8}")) {
             throw new OtpInvalidException();
         }
@@ -115,6 +127,9 @@ public class OtpService {
                 .orElseThrow(OtpInvalidException::new);
         if (challenge.isVerified()) {
             throw new OtpAlreadyVerifiedException();
+        }
+        if (expectedPurpose != null && challenge.getPurpose() != expectedPurpose) {
+            throw new OtpInvalidException();
         }
         Instant now = clock.instant();
         if (challenge.getAttemptCount() >= properties.getMaxAttempts()) {
@@ -132,6 +147,20 @@ public class OtpService {
             throw new OtpInvalidException();
         }
 
+        challenge.markVerified(now);
+        challengeRepository.saveAndFlush(challenge);
+        return challenge;
+    }
+
+    @Transactional(noRollbackFor = {
+            OtpInvalidException.class,
+            OtpAttemptsExceededException.class,
+            OtpCooldownException.class,
+            OtpRateLimitedException.class,
+            OtpAlreadyVerifiedException.class
+    })
+    public User verify(UUID challengeId, String rawCode) {
+        OtpChallenge challenge = verifyChallenge(challengeId, rawCode, OtpPurpose.REGISTRATION);
         User user = challenge.getUser();
         if (challenge.getChannel() == OtpChannel.EMAIL) {
             user.markEmailVerified();
@@ -140,7 +169,6 @@ public class OtpService {
         } else {
             throw new BusinessRuleException("This verification channel is not valid for the account.");
         }
-        challenge.markVerified(now);
         userRepository.save(user);
         return user;
     }
@@ -170,7 +198,7 @@ public class OtpService {
                 passwordEncoder.encode(code),
                 expiresAt,
                 now.plus(properties.getResendCooldown())));
-        deliveryGateway.deliver(new OtpDeliveryMessage(current.getChannel(), destination, code, expiresAt));
+        deliveryGateway.deliver(new OtpDeliveryMessage(current.getChannel(), destination, code, expiresAt, current.getPurpose()));
         return OtpChallengeResponse.from(replacement, destination);
     }
 

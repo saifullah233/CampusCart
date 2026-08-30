@@ -23,6 +23,9 @@ export default function Login({ accountType: propAccountType }) {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(
+    location.state?.successMessage || location.state?.message || ''
+  );
   const [pendingVerification, setPendingVerification] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,6 +36,7 @@ export default function Login({ accountType: propAccountType }) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
     setApiError('');
+    setSuccessMessage('');
     setPendingVerification(null);
   };
 
@@ -58,6 +62,7 @@ export default function Login({ accountType: propAccountType }) {
     setSubmitting(true);
     setApiError('');
     setInfoMessage('');
+    setSuccessMessage('');
     setPendingVerification(null);
 
     try {
@@ -131,10 +136,6 @@ export default function Login({ accountType: propAccountType }) {
     });
   };
 
-  const handleForgotPassword = () => {
-    setInfoMessage('Password reset functionality is coming soon. Please contact support if you need assistance.');
-  };
-
   return (
     <div className="login-page">
       {/* ─── Header ─── */}
@@ -194,6 +195,17 @@ export default function Login({ accountType: propAccountType }) {
                 : 'Log in with your official college email.'}
             </p>
           </div>
+
+          {/* Success Banner */}
+          {successMessage && (
+            <div className="login-alert login-alert--success">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              <span>{successMessage}</span>
+            </div>
+          )}
 
           {/* Info Banner */}
           {infoMessage && (
@@ -273,13 +285,12 @@ export default function Login({ accountType: propAccountType }) {
                 <label className="login-field__label" htmlFor="login-password">
                   Password
                 </label>
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
+                <Link
+                  to="/forgot-password"
                   className="login-field__forgot"
                 >
                   Forgot Password?
-                </button>
+                </Link>
               </div>
               <div className={`login-field__row ${errors.password ? 'login-field__row--error' : ''}`}>
                 <div className="login-field__icon">

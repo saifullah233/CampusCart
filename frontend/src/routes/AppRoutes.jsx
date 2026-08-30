@@ -7,6 +7,9 @@ import CommunityRegister from '../pages/auth/CommunityRegister';
 import StudentRegister from '../pages/auth/StudentRegister';
 import VerifyOtp from '../pages/auth/VerifyOtp';
 import Login from '../pages/auth/Login';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import VerifyPasswordResetOtp from '../pages/auth/VerifyPasswordResetOtp';
+import ResetPassword from '../pages/auth/ResetPassword';
 import Home from '../pages/marketplace/Home';
 
 // Minimal Placeholder Components for Routing Validation
@@ -43,6 +46,30 @@ export const AppRoutes = () => {
         element={
           <PublicRoute>
             <Login accountType="COMMUNITY" />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password/verify-otp"
+        element={
+          <PublicRoute>
+            <VerifyPasswordResetOtp />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password/reset"
+        element={
+          <PublicRoute>
+            <ResetPassword />
           </PublicRoute>
         }
       />

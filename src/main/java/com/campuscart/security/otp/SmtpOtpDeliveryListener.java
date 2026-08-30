@@ -36,11 +36,20 @@ public class SmtpOtpDeliveryListener {
                     SimpleMailMessage mail = new SimpleMailMessage();
                     mail.setFrom(fromAddress);
                     mail.setTo(message.destination());
-                    mail.setSubject("Your CampusCart Verification Code");
-                    mail.setText("Welcome to CampusCart!\n\n"
-                            + "Your one-time verification code is: " + message.code() + "\n\n"
-                            + "This code will expire in 5 minutes.\n"
-                            + "For your security, do not share this code with anyone.");
+                    if (message.purpose() == OtpPurpose.PASSWORD_RESET) {
+                        mail.setSubject("Reset Your CampusCart Password");
+                        mail.setText("Hello from CampusCart,\n\n"
+                                + "We received a request to reset your password.\n"
+                                + "Your 6-digit verification code is: " + message.code() + "\n\n"
+                                + "This code will expire in 5 minutes.\n"
+                                + "For your security, do not share this code with anyone. If you did not request a password reset, please ignore this email.");
+                    } else {
+                        mail.setSubject("Your CampusCart Verification Code");
+                        mail.setText("Welcome to CampusCart!\n\n"
+                                + "Your one-time verification code is: " + message.code() + "\n\n"
+                                + "This code will expire in 5 minutes.\n"
+                                + "For your security, do not share this code with anyone.");
+                    }
                     mailSender.send(mail);
                     log.info("OTP email successfully dispatched to destination: {}",
                             maskEmail(message.destination()));

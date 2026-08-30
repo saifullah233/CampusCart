@@ -29,4 +29,13 @@ public interface OtpChallengeRepository extends JpaRepository<OtpChallenge, UUID
     Optional<OtpChallenge> findActiveUnverifiedChallenge(@Param("userId") UUID userId,
                                                          @Param("channel") OtpChannel channel,
                                                          @Param("now") Instant now);
+
+    @Query("select challenge from OtpChallenge challenge join fetch challenge.user "
+            + "where challenge.user.id = :userId and challenge.channel = :channel and challenge.purpose = :purpose "
+            + "and challenge.verifiedAt is null and challenge.supersededAt is null "
+            + "and challenge.expiresAt > :now order by challenge.createdAt desc limit 1")
+    Optional<OtpChallenge> findActiveUnverifiedChallengeByPurpose(@Param("userId") UUID userId,
+                                                                 @Param("channel") OtpChannel channel,
+                                                                 @Param("purpose") OtpPurpose purpose,
+                                                                 @Param("now") Instant now);
 }
