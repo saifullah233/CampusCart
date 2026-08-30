@@ -38,13 +38,11 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
   }, []);
 
   // Fetch real counts from backend
-  useEffect(() => {
-    let cancelled = false;
-
+  const fetchCounts = () => {
     // Fetch unread notifications count
     api.get('/api/v1/notifications/unread-count')
       .then((res) => {
-        if (!cancelled && res.success && typeof res.data === 'number') {
+        if (res.success && typeof res.data === 'number') {
           setUnreadNotifications(res.data);
         }
       })
@@ -53,13 +51,26 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
     // Fetch cart count
     api.get('/api/v1/cart')
       .then((res) => {
-        if (!cancelled && res.success && res.data?.items) {
+        if (res.success && res.data?.items) {
           setCartItemCount(res.data.items.length);
         }
       })
       .catch(() => {});
+  };
 
-    return () => { cancelled = true; };
+  useEffect(() => {
+    fetchCounts();
+
+    const handleCartUpdate = () => fetchCounts();
+    const handleUnreadUpdate = () => fetchCounts();
+
+    window.addEventListener('campuscart-cart-updated', handleCartUpdate);
+    window.addEventListener('campuscart-unread-updated', handleUnreadUpdate);
+
+    return () => {
+      window.removeEventListener('campuscart-cart-updated', handleCartUpdate);
+      window.removeEventListener('campuscart-unread-updated', handleUnreadUpdate);
+    };
   }, []);
 
   const handleSearchSubmit = (e) => {
@@ -188,6 +199,19 @@ export default function Navbar({ onToggleSidebar, onSearch, searchQuery }) {
                 <div className="cc-navbar__dropdown-name">{user?.fullName || 'CampusCart User'}</div>
                 <div className="cc-navbar__dropdown-email">{user?.email}</div>
               </div>
+
+              <Link
+                to="/orders"
+                className="cc-navbar__dropdown-item"
+                onClick={() => setDropdownOpen(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 0 1-8 0" />
+                </svg>
+                My Orders
+              </Link>
 
               <Link
                 to="/profile"

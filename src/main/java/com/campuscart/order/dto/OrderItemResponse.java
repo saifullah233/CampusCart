@@ -11,5 +11,12 @@ public record OrderItemResponse(
         String productTitle,
         BigDecimal unitPrice,
         int quantity,
-        BigDecimal lineTotal) {
+        BigDecimal lineTotal,
+        String imageUrl) {
+
+    public OrderItemResponse(UUID id, UUID productId, UUID sellerId, String sellerName,
+                             String productTitle, BigDecimal unitPrice, int quantity,
+                             BigDecimal lineTotal) {
+        this(id, productId, sellerId, sellerName, productTitle, unitPrice, quantity, lineTotal, null);
+    }
 }
