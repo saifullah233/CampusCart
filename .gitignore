@@ -35,3 +35,5 @@ src/main/resources/application-local.yml
 .mvn/timing.properties
 .qwen/
 
+
+*.pem
