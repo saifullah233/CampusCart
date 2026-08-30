@@ -14,6 +14,7 @@ import Home from '../pages/marketplace/Home';
 import Marketplace from '../pages/marketplace/Marketplace';
 import ProductDetails from '../pages/marketplace/ProductDetails';
 import MyListings from '../pages/marketplace/MyListings';
+import Wishlist from '../pages/marketplace/Wishlist';
 import Cart from '../pages/commerce/Cart';
 import Orders from '../pages/commerce/Orders';
 import OrderDetails from '../pages/commerce/OrderDetails';
@@ -205,7 +206,15 @@ export const AppRoutes = () => {
         path="/wishlist"
         element={
           <ProtectedRoute>
-            <Placeholder name="Wishlist" />
+            <Wishlist />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/marketplace/wishlist"
+        element={
+          <ProtectedRoute>
+            <Wishlist />
           </ProtectedRoute>
         }
       />
