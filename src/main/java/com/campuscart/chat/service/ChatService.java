@@ -244,6 +244,8 @@ public class ChatService {
         return toReportResponse(report);
     }
 
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
     private ChatMessageResponse persistMessage(Conversation conversation, ChatMessage message, UUID senderId) {
         ChatMessage saved = messageRepository.save(message);
         Instant sentAt = saved.getCreatedAt() == null ? clock.instant() : saved.getCreatedAt();
@@ -252,9 +254,29 @@ public class ChatService {
         publishAfterCommit(conversation.getId(), response);
         UUID recipientId = conversation.getBuyer().getId().equals(senderId)
                 ? conversation.getSeller().getId() : conversation.getBuyer().getId();
-        notificationService.create(recipientId, NotificationType.NEW_MESSAGE, "New message",
-                "You have a new message.", "{\"conversationId\":\"" + conversation.getId()
-                        + "\",\"messageId\":\"" + saved.getId() + "\"}");
+        User sender = saved.getSender();
+        String senderName = sender != null && sender.getFullName() != null ? sender.getFullName() : "CampusCart Member";
+        String messageText = saved.getContent() != null && !saved.getContent().isBlank()
+                ? saved.getContent() : "You have a new message.";
+        java.util.Map<String, Object> data = new java.util.LinkedHashMap<>();
+        data.put("conversationId", conversation.getId().toString());
+        data.put("messageId", saved.getId().toString());
+        data.put("senderId", senderId.toString());
+        data.put("senderName", senderName);
+        data.put("messageContent", messageText);
+        if (conversation.getProduct() != null) {
+            data.put("productId", conversation.getProduct().getId().toString());
+            data.put("productTitle", conversation.getProduct().getTitle());
+            data.put("price", conversation.getProduct().getPrice());
+        }
+        String dataJson;
+        try {
+            dataJson = objectMapper.writeValueAsString(data);
+        } catch (Exception ex) {
+            dataJson = "{\"conversationId\":\"" + conversation.getId() + "\",\"messageId\":\"" + saved.getId() + "\"}";
+        }
+        notificationService.create(recipientId, NotificationType.NEW_MESSAGE,
+                "New message from " + senderName, messageText, dataJson);
         return response;
     }
 
