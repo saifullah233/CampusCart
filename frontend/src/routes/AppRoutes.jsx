@@ -19,6 +19,7 @@ import Cart from '../pages/commerce/Cart';
 import Orders from '../pages/commerce/Orders';
 import OrderDetails from '../pages/commerce/OrderDetails';
 import Chat from '../pages/chat/Chat';
+import Notifications from '../pages/notifications/Notifications';
 
 // Minimal Placeholder Components for Routing Validation
 const Placeholder = ({ name }) => (
@@ -247,6 +248,15 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Chat />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Notifications />
           </ProtectedRoute>
         }
       />
