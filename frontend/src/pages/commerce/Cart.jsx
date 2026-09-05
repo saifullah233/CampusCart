@@ -27,7 +27,7 @@ export default function Cart() {
       if (res.success && res.data) {
         setCart(res.data);
       } else {
-        setCart({ items: [], totalAmount: 0, checkoutReady: false });
+        setCart({ items: [], total: 0, totalAmount: 0, checkoutAvailable: false, checkoutReady: false });
       }
     } catch (err) {
       setError(err?.message || err?.error?.detail || 'Unable to load your cart.');
@@ -107,12 +107,34 @@ export default function Cart() {
   };
 
   const formatCurrency = (val) => {
-    if (val === null || val === undefined) return '₹0';
+    if (val === null || val === undefined || isNaN(Number(val))) return '₹0';
     return `₹${Number(val).toLocaleString('en-IN')}`;
   };
 
   const hasItems = cart && cart.items && cart.items.length > 0;
   const hasUnavailableItems = hasItems && cart.items.some((it) => !it.available);
+
+  // Subtotal calculation: use backend total if valid number, otherwise calculate sum(item.price * item.quantity)
+  const calculateSubtotal = () => {
+    if (!hasItems) return 0;
+    if (cart.total !== undefined && cart.total !== null && !isNaN(Number(cart.total))) {
+      return Number(cart.total);
+    }
+    if (cart.totalAmount !== undefined && cart.totalAmount !== null && !isNaN(Number(cart.totalAmount))) {
+      return Number(cart.totalAmount);
+    }
+    return cart.items.reduce((sum, item) => {
+      if (item.available === false) return sum;
+      const price = Number(item.unitPrice) || 0;
+      const qty = Number(item.quantity) || 0;
+      const lineTotal = item.lineTotal !== undefined && item.lineTotal !== null ? Number(item.lineTotal) : price * qty;
+      return sum + lineTotal;
+    }, 0);
+  };
+
+  const subtotal = calculateSubtotal();
+  const totalAmount = subtotal;
+  const isCheckoutAvailable = Boolean(cart?.checkoutAvailable ?? cart?.checkoutReady ?? (hasItems && !hasUnavailableItems));
 
   return (
     <DashboardLayout>
@@ -259,7 +281,11 @@ export default function Cart() {
                       {/* Total Price */}
                       <div className="cc-cart-item__price-box">
                         <span className="cc-cart-item__line-total">
-                          {formatCurrency(item.lineTotal)}
+                          {formatCurrency(
+                            item.lineTotal !== undefined && item.lineTotal !== null
+                              ? item.lineTotal
+                              : (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)
+                          )}
                         </span>
                       </div>
 
@@ -290,7 +316,7 @@ export default function Cart() {
 
                 <div className="cc-cart-summary-row">
                   <span>Subtotal ({cart.items.length} item{cart.items.length === 1 ? '' : 's'})</span>
-                  <span>{formatCurrency(cart.totalAmount)}</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
 
                 <div className="cc-cart-summary-row">
@@ -302,14 +328,14 @@ export default function Cart() {
 
                 <div className="cc-cart-summary-row cc-cart-summary-row--total">
                   <span>Total Amount</span>
-                  <span className="cc-cart-total-price">{formatCurrency(cart.totalAmount)}</span>
+                  <span className="cc-cart-total-price">{formatCurrency(totalAmount)}</span>
                 </div>
 
                 <button
                   type="button"
                   className="cc-cart-btn-checkout"
                   onClick={() => setConfirmModalOpen(true)}
-                  disabled={!cart.checkoutReady || checkoutLoading}
+                  disabled={!isCheckoutAvailable || checkoutLoading}
                 >
                   {checkoutLoading ? 'Processing Checkout...' : 'Proceed to Checkout'}
                 </button>
@@ -341,14 +367,20 @@ export default function Cart() {
 
             <div className="cc-checkout-modal__body">
               <p className="cc-checkout-modal__desc">
-                You are placing an order for <strong>{cart.items.length} item{cart.items.length === 1 ? '' : 's'}</strong> with a total of <strong>{formatCurrency(cart.totalAmount)}</strong>.
+                You are placing an order for <strong>{cart.items.length} item{cart.items.length === 1 ? '' : 's'}</strong> with a total of <strong>{formatCurrency(totalAmount)}</strong>.
               </p>
 
               <div className="cc-checkout-modal__items">
                 {cart.items.map((it) => (
                   <div key={it.productId} className="cc-checkout-mini-row">
                     <span className="cc-checkout-mini-title">{it.quantity}x {it.title}</span>
-                    <span className="cc-checkout-mini-price">{formatCurrency(it.lineTotal)}</span>
+                    <span className="cc-checkout-mini-price">
+                      {formatCurrency(
+                        it.lineTotal !== undefined && it.lineTotal !== null
+                          ? it.lineTotal
+                          : (Number(it.unitPrice) || 0) * (Number(it.quantity) || 0)
+                      )}
+                    </span>
                   </div>
                 ))}
               </div>

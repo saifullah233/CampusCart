@@ -99,7 +99,7 @@ export default function Orders() {
   };
 
   const formatCurrency = (val) => {
-    if (val === null || val === undefined) return '₹0';
+    if (val === null || val === undefined || isNaN(Number(val))) return '₹0';
     return `₹${Number(val).toLocaleString('en-IN')}`;
   };
 
