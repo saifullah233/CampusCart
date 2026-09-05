@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import api from '../../services/api';
@@ -48,11 +48,11 @@ function NotificationIcon({ type }) {
   );
 }
 
-/** Parse the dataJson field safely and return an object or {}. */
+/** Parse dataJson safely. Always returns an object. */
 function parseData(dataJson) {
   if (!dataJson) return {};
   try {
-    return JSON.parse(dataJson);
+    return typeof dataJson === 'string' ? JSON.parse(dataJson) : dataJson;
   } catch {
     return {};
   }
@@ -64,22 +64,22 @@ function resolveTarget(notification) {
   switch (notification.type) {
     case 'NEW_MESSAGE':
       if (data.conversationId) return `/chat?conversationId=${data.conversationId}`;
-      return '/chat';
+      return null;
     case 'ORDER_RECEIVED':
     case 'ORDER_UPDATE':
       if (data.orderId) return `/orders/${data.orderId}`;
-      return '/orders';
+      return null;
     case 'NEW_PRODUCT':
     case 'PRODUCT_LIKED':
     case 'WISHLIST_ADDED':
       if (data.productId) return `/products/${data.productId}`;
-      return '/products';
+      return null;
     default:
       return null;
   }
 }
 
-/** Relative-time label, e.g. "2 minutes ago". */
+/** Relative-time label, e.g. "2m ago". */
 function relativeTime(isoString) {
   if (!isoString) return '';
   const delta = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
@@ -102,8 +102,82 @@ export default function Notifications() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Cached enrichment for older notifications lacking senderName/productTitle in dataJson
+  const [enrichedData, setEnrichedData] = useState({});
+  const fetchedConvsRef = useRef(new Set());
+
+  // Current user id for counterparty determination
+  const getCurrentUserId = () => {
+    try {
+      const userStr = localStorage.getItem('cc_user');
+      if (userStr) {
+        const u = JSON.parse(userStr);
+        return u.id || u.userId;
+      }
+    } catch {
+      // Fallback
+    }
+    return null;
+  };
+  const currentUserId = getCurrentUserId();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  /** Enrich older NEW_MESSAGE notifications that only contain conversationId */
+  const enrichOldNotifications = useCallback(async (list) => {
+    const missingConvs = list
+      .filter((n) => n.type === 'NEW_MESSAGE')
+      .map((n) => {
+        const data = parseData(n.dataJson);
+        return {
+          notifId: n.id,
+          convId: data.conversationId,
+          hasSender: !!data.senderName,
+          hasProduct: !!data.productTitle,
+        };
+      })
+      .filter((item) => item.convId && (!item.hasSender || !item.hasProduct));
+
+    for (const item of missingConvs) {
+      if (fetchedConvsRef.current.has(item.convId)) continue;
+      fetchedConvsRef.current.add(item.convId);
+
+      try {
+        const res = await api.get(`/api/v1/conversations/${item.convId}`);
+        if (res.success && res.data) {
+          const conv = res.data;
+          const otherPartyName = currentUserId && conv.buyerId === currentUserId
+            ? conv.sellerName
+            : conv.buyerName;
+
+          let price = null;
+          if (conv.productId) {
+            try {
+              const pRes = await api.get(`/api/v1/products/${conv.productId}`);
+              if (pRes.success && pRes.data) {
+                price = pRes.data.price;
+              }
+            } catch {
+              // Ignore product fetch failure
+            }
+          }
+
+          setEnrichedData((prev) => ({
+            ...prev,
+            [item.convId]: {
+              senderName: otherPartyName || 'Campus Member',
+              productTitle: conv.productTitle,
+              price: price,
+            },
+          }));
+        }
+      } catch {
+        // Ignore conversation fetch failure
+      }
+    }
+  }, [currentUserId]);
 
   /** Fetch a page of notifications and merge into state. */
   const fetchPage = useCallback(async (pageIndex, replace = false) => {
@@ -114,11 +188,12 @@ export default function Notifications() {
         setNotifications((prev) => (replace ? content : [...prev, ...content]));
         setHasMore(!res.data.last);
         setPage(pageIndex);
+        enrichOldNotifications(content);
       }
     } catch {
       if (replace) setError('Failed to load notifications. Please try again.');
     }
-  }, []);
+  }, [enrichOldNotifications]);
 
   useEffect(() => {
     setLoading(true);
@@ -146,6 +221,9 @@ export default function Notifications() {
     const target = resolveTarget(notification);
     if (target) {
       navigate(target);
+    } else {
+      setToastMessage('This notification target is no longer available.');
+      setTimeout(() => setToastMessage(null), 3500);
     }
   };
 
@@ -172,6 +250,42 @@ export default function Notifications() {
     setLoadingMore(false);
   };
 
+  /** Helper to compute title, message content, and product line for a notification */
+  const formatNotification = (notification) => {
+    const data = parseData(notification.dataJson);
+    const enriched = data.conversationId ? (enrichedData[data.conversationId] || {}) : {};
+
+    if (notification.type === 'NEW_MESSAGE') {
+      const senderName = data.senderName || enriched.senderName;
+      const title = senderName
+        ? `New message from ${senderName}`
+        : (notification.title && notification.title !== 'New message' ? notification.title : 'New message');
+
+      const messageContent = data.messageContent || notification.content || 'You have a new message.';
+      const isCustomMessage = messageContent && messageContent !== 'You have a new message.';
+
+      const productTitle = data.productTitle || enriched.productTitle;
+      const price = data.price != null ? data.price : enriched.price;
+
+      let productLine = null;
+      if (productTitle) {
+        productLine = `${productTitle}${price != null ? ` · ₹${Number(price).toLocaleString('en-IN')}` : ''}`;
+      }
+
+      return {
+        title,
+        content: isCustomMessage ? `"${messageContent}"` : messageContent,
+        productLine,
+      };
+    }
+
+    return {
+      title: notification.title,
+      content: notification.content,
+      productLine: null,
+    };
+  };
+
   return (
     <DashboardLayout>
       <div className="cc-notif-page">
@@ -196,6 +310,18 @@ export default function Notifications() {
             )}
           </div>
 
+          {/* Toast message for missing target */}
+          {toastMessage && (
+            <div className="cc-notif-toast" role="alert">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>{toastMessage}</span>
+            </div>
+          )}
+
           {/* Content */}
           {loading ? (
             <div className="cc-notif-loading">
@@ -216,32 +342,47 @@ export default function Notifications() {
           ) : (
             <>
               <div className="cc-notif-list">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    role="button"
-                    tabIndex={0}
-                    className={`cc-notif-item${!notification.read ? ' cc-notif-item--unread' : ''}`}
-                    onClick={() => handleNotificationClick(notification)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleNotificationClick(notification);
-                      }
-                    }}
-                    aria-label={`${notification.title}: ${notification.content}${!notification.read ? ' (unread)' : ''}`}
-                  >
-                    <NotificationIcon type={notification.type} />
+                {notifications.map((notification) => {
+                  const { title, content, productLine } = formatNotification(notification);
 
-                    <div className="cc-notif-body">
-                      <div className="cc-notif-body__title">{notification.title}</div>
-                      <div className="cc-notif-body__content">{notification.content}</div>
-                      <div className="cc-notif-body__time">{relativeTime(notification.createdAt)}</div>
+                  return (
+                    <div
+                      key={notification.id}
+                      role="button"
+                      tabIndex={0}
+                      className={`cc-notif-item${!notification.read ? ' cc-notif-item--unread' : ''}`}
+                      onClick={() => handleNotificationClick(notification)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleNotificationClick(notification);
+                        }
+                      }}
+                      aria-label={`${title}: ${content}${!notification.read ? ' (unread)' : ''}`}
+                    >
+                      <NotificationIcon type={notification.type} />
+
+                      <div className="cc-notif-body">
+                        <div className="cc-notif-body__title">{title}</div>
+                        <div className="cc-notif-body__content">{content}</div>
+
+                        {productLine && (
+                          <div className="cc-notif-body__product">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                              <line x1="3" y1="6" x2="21" y2="6" />
+                            </svg>
+                            <span>{productLine}</span>
+                          </div>
+                        )}
+
+                        <div className="cc-notif-body__time">{relativeTime(notification.createdAt)}</div>
+                      </div>
+
+                      {!notification.read && <div className="cc-notif-dot" aria-hidden="true" />}
                     </div>
-
-                    {!notification.read && <div className="cc-notif-dot" aria-hidden="true" />}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {hasMore && (

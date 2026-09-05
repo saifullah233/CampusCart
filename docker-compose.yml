@@ -83,18 +83,22 @@ services:
 
     restart: unless-stopped
 
+
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: /
-    container_name: campuscart-frontend
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-    restart: unless-stopped
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+    args:
+      VITE_API_URL: /
+  container_name: campuscart-frontend
+  depends_on:
+    - app
+  ports:
+    - "80:80"
+    - "443:443"
+  volumes:
+    - /etc/letsencrypt:/etc/letsencrypt:ro
+  restart: unless-stopped
 
 volumes:
   mysql-data:
